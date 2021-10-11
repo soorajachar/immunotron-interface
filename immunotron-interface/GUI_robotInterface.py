@@ -185,48 +185,24 @@ class ExperimentHomePage(tk.Frame):
                 self.headerLabels[-2].configure(text='\n'.join([allLabels[-2]]+['']*decrement))
             
             #Update diti warning label
-            with open("masterSchedule.txt", "r") as schedule:
-                lines = schedule.readlines()
-            startLine = 0
-            numExperiments = 0
-            for i,line in enumerate(lines):
-                if 'Experiment ' in line:
-                    numExperiments+=1
-            singleExperiment = numExperiments == 1
-            wafers = int(np.loadtxt(finalPath+'DiTisite.txt'))
-            remainingRows = 15-wafers-1
+            if "masterSchedule.txt" in os.listdir():
+                with open("masterSchedule.txt", "r") as schedule:
+                    lines = schedule.readlines()
+                startLine = 0
+                numExperiments = 0
+                for i,line in enumerate(lines):
+                    if 'Experiment ' in line:
+                        numExperiments+=1
+                singleExperiment = numExperiments == 1
+                wafers = int(np.loadtxt(finalPath+'DiTisite.txt'))
+                remainingRows = 15-wafers-1
 
-            currentRow = 0
-            currentLine = 0
-            allRows = []
-            finalTimepoint = ''
-            totalnumTimepoints = 0
-            nextTimepointExists = False
-            for i,line in enumerate(lines):
-                if 'Timepoint ' in line:
-                    totalnumTimepoints+=1
-                    usefulPortion = line.split(': ')[1]
-                    time,row = usefulPortion.split(' (')
-                    timeObject = datetime.strptime(time,'%Y-%m-%d %a %I:%M %p')
-                    row = int(row[:-2])
-                    allRows.append(row)
-                    #If current time is ahead of timepoint
-                    if datetime.now() > timeObject:
-                        currentRow = row
-                        currentLine = i
-                    else:
-                        nextTimepointExists = True
-                        cutoff = currentRow + remainingRows
-                        if row > cutoff:
-                            #Determine whether previous timepoint could finish
-                            difference = allRows[-1] - allRows[-2]
-                            if allRows[-2]+difference-1 <= cutoff:
-                                finalTimepoint = lines[i]
-                            else:
-                                finalTimepoint = lines[i-1]
-                            break
-            nextTimepointLine = 0
-            if nextTimepointExists:
+                currentRow = 0
+                currentLine = 0
+                allRows = []
+                finalTimepoint = ''
+                totalnumTimepoints = 0
+                nextTimepointExists = False
                 for i,line in enumerate(lines):
                     if 'Timepoint ' in line:
                         totalnumTimepoints+=1
@@ -235,59 +211,84 @@ class ExperimentHomePage(tk.Frame):
                         timeObject = datetime.strptime(time,'%Y-%m-%d %a %I:%M %p')
                         row = int(row[:-2])
                         allRows.append(row)
-                        #If current time is behind timepoint
-                        if datetime.now() <= timeObject:
-                            nextTimepointLine = i
-                            break
-            #Update next timepoint window
-            if len(validExps) > 0:
+                        #If current time is ahead of timepoint
+                        if datetime.now() > timeObject:
+                            currentRow = row
+                            currentLine = i
+                        else:
+                            nextTimepointExists = True
+                            cutoff = currentRow + remainingRows
+                            if row > cutoff:
+                                #Determine whether previous timepoint could finish
+                                difference = allRows[-1] - allRows[-2]
+                                if allRows[-2]+difference-1 <= cutoff:
+                                    finalTimepoint = lines[i]
+                                else:
+                                    finalTimepoint = lines[i-1]
+                                break
+                nextTimepointLine = 0
                 if nextTimepointExists:
-                    nextUsefulPortion = lines[nextTimepointLine].split(': ')[1]
-                    nextTime,nextRow = nextUsefulPortion.split(' (')
-                    nextRow = nextRow[:-2]
-                    nextTimeObject = datetime.strptime(nextTime,'%Y-%m-%d %a %I:%M %p')
-                    if singleExperiment:
-                        expID = self.allExperimentParameters[validExps[0]]['experimentID']
-                        tp = lines[nextTimepointLine].split(': ')[0].split(' ')[1]
-                    else:
-                        expID = lines[nextTimepointLine].split(': ')[0].split('-')[1]
-                        tp = lines[nextTimepointLine].split(': ')[0].split('-')[0].split(' ')[1]
-                    timeDifference = nextTimeObject - datetime.now()
-                    minutesRemaining = timeDifference.seconds//60
-                    nextTimepointString = 'Timepoint '+str(tp)+' of experiment '+expID+' is next: row number is ('+str(nextRow)+'), wait time is (' +str(minutesRemaining)+') minutes'
-                    nextTimepointLabel.configure(text=nextTimepointString)
-                else:
-                    nextTimepointLabel.configure(text='')
-
-            #Update diti warning label
-            if finalTimepoint == '':
-                ditiWarningLabel.config(text='')
-            else:
+                    for i,line in enumerate(lines):
+                        if 'Timepoint ' in line:
+                            totalnumTimepoints+=1
+                            usefulPortion = line.split(': ')[1]
+                            time,row = usefulPortion.split(' (')
+                            timeObject = datetime.strptime(time,'%Y-%m-%d %a %I:%M %p')
+                            row = int(row[:-2])
+                            allRows.append(row)
+                            #If current time is behind timepoint
+                            if datetime.now() <= timeObject:
+                                nextTimepointLine = i
+                                break
+                #Update next timepoint window
                 if len(validExps) > 0:
-                    if singleExperiment:
-                        expID = self.allExperimentParameters[validExps[0]]['experimentID']
+                    if nextTimepointExists:
+                        nextUsefulPortion = lines[nextTimepointLine].split(': ')[1]
+                        nextTime,nextRow = nextUsefulPortion.split(' (')
+                        nextRow = nextRow[:-2]
+                        nextTimeObject = datetime.strptime(nextTime,'%Y-%m-%d %a %I:%M %p')
+                        if singleExperiment:
+                            expID = self.allExperimentParameters[validExps[0]]['experimentID']
+                            tp = lines[nextTimepointLine].split(': ')[0].split(' ')[1]
+                        else:
+                            expID = lines[nextTimepointLine].split(': ')[0].split('-')[1]
+                            tp = lines[nextTimepointLine].split(': ')[0].split('-')[0].split(' ')[1]
+                        timeDifference = nextTimeObject - datetime.now()
+                        minutesRemaining = timeDifference.seconds//60
+                        nextTimepointString = 'Timepoint '+str(tp)+' of experiment '+expID+' is next: row number is ('+str(nextRow)+'), wait time is (' +str(minutesRemaining)+') minutes'
+                        nextTimepointLabel.configure(text=nextTimepointString)
                     else:
-                        expID = finalTimepoint.split(': ')[0].split('-')[1]
-                    tipChangeDeadline = finalTimepoint.split(': ')[1].split(' (')[0]
-                    ditiWarningLabel.config(text='Change tips before '+tipChangeDeadline+' ('+expID+' timepoint)')
-            
-            for exp in range(NUMEXP):
-                allAddedStrings = [self.allExpInfoLabels[exp][-1]['text'] for exp in range(NUMEXP)]
-                emptyCount = 0
-                noCount = 0
-                for addedString in allAddedStrings:
-                    if addedString == EMPTYTEXT:
-                        emptyCount+=1
-                    elif addedString == 'No':
-                        noCount+=1
-                if emptyCount == NUMEXP:
-                    generateButton.config(state=tk.DISABLED)
+                        nextTimepointLabel.configure(text='')
+
+                #Update diti warning label
+                if finalTimepoint == '':
+                    ditiWarningLabel.config(text='')
                 else:
-                    generateButton.config(state=tk.NORMAL)
-                    if noCount > 0:
-                        quitButton.config(state=tk.DISABLED)
+                    if len(validExps) > 0:
+                        if singleExperiment:
+                            expID = self.allExperimentParameters[validExps[0]]['experimentID']
+                        else:
+                            expID = finalTimepoint.split(': ')[0].split('-')[1]
+                        tipChangeDeadline = finalTimepoint.split(': ')[1].split(' (')[0]
+                        ditiWarningLabel.config(text='Change tips before '+tipChangeDeadline+' ('+expID+' timepoint)')
+                
+                for exp in range(NUMEXP):
+                    allAddedStrings = [self.allExpInfoLabels[exp][-1]['text'] for exp in range(NUMEXP)]
+                    emptyCount = 0
+                    noCount = 0
+                    for addedString in allAddedStrings:
+                        if addedString == EMPTYTEXT:
+                            emptyCount+=1
+                        elif addedString == 'No':
+                            noCount+=1
+                    if emptyCount == NUMEXP:
+                        generateButton.config(state=tk.DISABLED)
                     else:
-                        quitButton.config(state=tk.NORMAL)
+                        generateButton.config(state=tk.NORMAL)
+                        if noCount > 0:
+                            quitButton.config(state=tk.DISABLED)
+                        else:
+                            quitButton.config(state=tk.NORMAL)
 
             #ttk.Separator(expFrame, orient='horizontal').place(relx=0,rely=0+separatorOffset*(len(allLabels)-1+maxPlateChangeLen),relwidth=1)
             self.after(60000, updateExperimentLabels)

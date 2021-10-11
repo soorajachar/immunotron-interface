@@ -1,2 +1,4 @@
 immunotron-interface/schedules/*
 immunotron-interface/matrices/*
+immunotron-interface/masterSchedule.txt
+immunotron-interface/__pycache__
