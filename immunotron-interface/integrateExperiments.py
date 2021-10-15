@@ -48,6 +48,26 @@ def integrateExperiments(experimentIDs):
     timeKeys = list(timeDict.keys())
     sortedTimeKeys = [timeKeys[timeObjects.index(x)] for x in sortedDateTimes]
 
+    timename = schedulePath+'masterSchedule.txt'
+    startTimes = []
+    with open(timename,'w') as output:
+        print('USE TIMEPOINTS IN PARENTHESES TO SET TIMEPOINT ON ROBOT',file=output,sep="\r\n")
+        print(file=output,sep="\r\n")
+        for scheduleIndex,experimentName in enumerate(experimentIDs):
+            schedule = open(schedulePath+"schedule_"+experimentName+".txt","r")
+            startTimeLine = schedule.readlines()[1]
+            startTimes.append(datetime.strptime(startTimeLine.split('Start Time: ')[1][:-1], timeFormat))
+            experimentID = experimentIDs[scheduleIndex]
+            print('Experiment '+experimentID+' '+startTimeLine[:-1],file=output)
+        print(file=output,sep="\r\n")
+        timepointLine = 1
+        for timeKey in sortedTimeKeys:
+            scheduleIndex = int(timeKey.split('-')[0])
+            timepointIndex = int(timeKey.split('-')[1])
+            currentTimeObject = timeDict[timeKey]
+            timepointLineString = '('+str(timepointLine)+')'
+            timepointLine+=timeDiffDict[scheduleIndex]
+            print(currentTimeObject.strftime('Timepoint '+str(timepointIndex+1)+'-'+experimentIDs[scheduleIndex]+': %Y-%m-%d %a %I:%M %p'+' '+timepointLineString),file=output,sep="\r\n")
     timename = 'masterSchedule.txt'
     startTimes = []
     with open(timename,'w') as output:
