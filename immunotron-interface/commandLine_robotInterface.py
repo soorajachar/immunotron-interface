@@ -141,7 +141,7 @@ np.savetxt(matrixPath+name,fullMatrix,fmt='%d',delimiter=',')
 
 #np.savetxt('numTimepoints.txt',np.array([fullMatrix.shape[0]]),fmt='%d',delimiter=',')
 
-#Produces file that contains the times each time point are performed, with a >>> signifying that the collection/sup/cell plates will be full at the end of the timepoint
+#Produces file that contains the times each time point are performed
 def createSchedule(timename):
     baseTimeArrayHours = timepointList[1:]
     now = datetime.today() - dt.timedelta(days=daysAgo)
@@ -154,7 +154,7 @@ def createSchedule(timename):
         for i in range(0,len(baseTimeArrayHours)):
             currentTimePointTime = fullStartTime + dt.timedelta(hours=baseTimeArrayHours[i])
             if((i+1)%3 == 0):
-                print(currentTimePointTime.strftime('Timepoint '+str(i+1)+': >>>%Y-%m-%d %a %I:%M %p' + ' ('+str(i+1+i*(numCulturePlatesForExperiment-1))+ ')'),file=output,sep="\r\n")
+                print(currentTimePointTime.strftime('Timepoint '+str(i+1)+': %Y-%m-%d %a %I:%M %p' + ' ('+str(i+1+i*(numCulturePlatesForExperiment-1))+ ')'),file=output,sep="\r\n")
             else:
                 print(currentTimePointTime.strftime('Timepoint '+str(i+1)+': %Y-%m-%d %a %I:%M %p' + ' ('+str(i+1+i*(numCulturePlatesForExperiment-1))+ ')'),file=output,sep="\r\n")
 

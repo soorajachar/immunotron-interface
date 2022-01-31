@@ -218,7 +218,7 @@ class ExperimentHomePage(tk.Frame):
                         else:
                             nextTimepointExists = True
                             cutoff = currentRow + remainingRows
-                            if row > cutoff:
+                            if row > cutoff and (cutoff != 0):
                                 #Determine whether previous timepoint could finish
                                 difference = allRows[-1] - allRows[-2]
                                 if allRows[-2]+difference-1 <= cutoff:
@@ -364,6 +364,12 @@ class ExperimentHomePage(tk.Frame):
                 else:
                     numRows = 0
                     for exp in experimentsToIntegrate:
+                        startTime = self.allExperimentParameters[exp]['fullStart']
+                        trueStartTime = datetime.strptime(startTime,'%Y-%m-%d %a %I:%M %p')
+                        difference = datetime.now() - trueStartTime
+                        trueDaysAgo = max(0,difference.days)
+                        self.allExperimentParameters[exp]['daysAgo'] = trueDaysAgo
+                        
                         tempNumRows = generateExperimentMatrix(singleExperiment=False,**self.allExperimentParameters[exp])
                         numRows+=tempNumRows
                     combineExperiments(experimentIDsToIntegrate,numRows)

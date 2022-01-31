@@ -147,6 +147,8 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         np.savetxt(finalPath+name,fullMatrix,fmt='%d',delimiter=',')
         timename = 'masterSchedule.txt'
         createSchedule(timename,master=True)
+        timename = schedulePath+'masterSchedule.txt'
+        createSchedule(timename,master=True)
     
     return numTimepoints
 
