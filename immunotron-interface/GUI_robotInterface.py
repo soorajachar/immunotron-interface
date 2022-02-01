@@ -366,7 +366,8 @@ class ExperimentHomePage(tk.Frame):
                     for exp in experimentsToIntegrate:
                         startTime = self.allExperimentParameters[exp]['fullStart']
                         trueStartTime = datetime.strptime(startTime,'%Y-%m-%d %a %I:%M %p')
-                        difference = datetime.now() - trueStartTime
+                        nowTime = datetime.now()
+                        difference = datetime(nowTime.year,nowTime.month,nowTime.day) - datetime(trueStartTime.year,trueStartTime.month,trueStartTime.day)
                         trueDaysAgo = max(0,difference.days)
                         self.allExperimentParameters[exp]['daysAgo'] = trueDaysAgo
                         
