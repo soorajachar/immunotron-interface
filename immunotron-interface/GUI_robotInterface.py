@@ -52,7 +52,7 @@ class ExperimentHomePage(tk.Frame):
  
         EMPTYTEXT = '-'
         NUMEXP = 4
-        allLabels = ['Experiment:','Name:','Incubator rack:','Cooling plate:','# conditions:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Change cooling plate:','Added to matrix:']
+        allLabels = ['Experiment:','Name:','Incubator rack:','Cooling plate:','# conditions:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Change cooling plate:','Added to matrix:'] # TODO: Add experiment type
         
         if 'allExperimentParameters.pkl' not in os.listdir():
             self.allExperimentParameters = {k:{} for k in range(NUMEXP)}
@@ -350,12 +350,13 @@ class ExperimentHomePage(tk.Frame):
             allProgressBars.append(pb)
 
         def generateFullMatrix():
-            experimentIDsToIntegrate,experimentsToIntegrate = [],[]
+            experimentIDsToIntegrate,experimentsToIntegrate,experimentTypesToIntegrate = [],[],[]
             for i,l in enumerate(self.allExpInfoLabels):
                 expName = l[0]['text']
                 if expName != EMPTYTEXT:
                     experimentIDsToIntegrate.append(expName)
                     experimentsToIntegrate.append(i)
+                    # TODO: Add in experiment type
             if len(experimentsToIntegrate) == 0:
                 messagebox.showwarning(title='Error',message='At least one experiment must be created before a matrix can be generated. Please try again.')
             else:
@@ -366,14 +367,13 @@ class ExperimentHomePage(tk.Frame):
                     for exp in experimentsToIntegrate:
                         startTime = self.allExperimentParameters[exp]['fullStart']
                         trueStartTime = datetime.strptime(startTime,'%Y-%m-%d %a %I:%M %p')
-                        nowTime = datetime.now()
-                        difference = datetime(nowTime.year,nowTime.month,nowTime.day) - datetime(trueStartTime.year,trueStartTime.month,trueStartTime.day)
+                        difference = datetime.now() - trueStartTime
                         trueDaysAgo = max(0,difference.days)
                         self.allExperimentParameters[exp]['daysAgo'] = trueDaysAgo
                         
                         tempNumRows = generateExperimentMatrix(singleExperiment=False,**self.allExperimentParameters[exp])
                         numRows+=tempNumRows
-                    combineExperiments(experimentIDsToIntegrate,numRows)
+                    combineExperiments(experimentIDsToIntegrate,numRows) # TODO: Pass list of experiment types
                 messagebox.showinfo(title='Success',message='Experiment matrix generated!')
                 for exp in experimentsToIntegrate:
                     self.allExperimentParameters[exp]['addedToMatrix'] = True
