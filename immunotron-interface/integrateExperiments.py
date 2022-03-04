@@ -1,5 +1,6 @@
+import enum
 import json,pickle,math,sys,os,string
-from datetime import datetime
+from datetime import datetime, timedelta
 import datetime as dt
 import numpy as np
 import platform
@@ -11,8 +12,9 @@ if platform.system() == 'Windows':
 else:
     finalPath = ''
 
-def integrateExperiments(experimentIDs):
+def integrateExperiments(experimentIDs, experimentTypes):
     timeFormat = '%Y-%m-%d %a %I:%M %p'
+    timepointDuration = {1:14, 2:45}
     
     #Sort experiment start times:
     startTimeDict = {}
@@ -45,8 +47,22 @@ def integrateExperiments(experimentIDs):
         
     timeObjects = list(timeDict.values())
     sortedDateTimes = sorted(timeObjects)
-    timeKeys = list(timeDict.keys())
-    sortedTimeKeys = [timeKeys[timeObjects.index(x)] for x in sortedDateTimes]
+    uniqueSortedDateTimes = sorted(set(sortedDateTimes))
+
+    sortedTimeKeys = []
+    for time in uniqueSortedDateTimes:
+        timeKey = [k for k,v in timeDict.items() if v == time]
+        timeKey.sort(key=lambda x: timepointDuration[experimentTypes[int(x.split('-')[0])]])
+        sortedTimeKeys.append(timeKey[0])
+        if len(timeKey) > 1:
+            prevExperimentType = experimentTypes[int(timeKey[0].split('-')[0])]
+            for i in range(1, len(timeKey)):
+                timeDict[timeKey[i]] += timedelta(minutes=i*timepointDuration[prevExperimentType])
+                sortedTimeKeys.append(timeKey[i])
+                prevExperimentType = experimentTypes[int(timeKey[i].split('-')[0])]
+
+    #timeKeys = list(timeDict.keys())
+    #sortedTimeKeys = [timeKeys[timeObjects.index(x)] for x in sortedDateTimes]
 
     timename = schedulePath+'masterSchedule.txt'
     startTimes = []
@@ -89,12 +105,12 @@ def integrateExperiments(experimentIDs):
             timepointLine+=timeDiffDict[scheduleIndex]
             print(currentTimeObject.strftime('Timepoint '+str(timepointIndex+1)+'-'+experimentIDs[scheduleIndex]+': %Y-%m-%d %a %I:%M %p'+' '+timepointLineString),file=output,sep="\r\n")
 
-    timepointDuration = 14
     #First time diff really doesn't matter
     firstTimeKey = sortedTimeKeys[0]
+    firstExperimentType = experimentTypes[int(sortedTimeKeys[0].split('-')[0])]
     initialTimeDiff = timeDict[sortedTimeKeys[0]] - startTimes[0] 
     minutes = int(initialTimeDiff.total_seconds() / 60)
-    timeDiffs = [minutes-timepointDuration*(timeDiffDict[0]-1)]
+    timeDiffs = [minutes-timepointDuration[firstExperimentType]*(timeDiffDict[0]-1)]
 
     for row in range(1,len(sortedTimeKeys)):
         currentTimeKey = sortedTimeKeys[row]
@@ -104,19 +120,21 @@ def integrateExperiments(experimentIDs):
         currentTimepointIndex = int(currentTimeKey.split('-')[1])
         prevScheduleIndex = int(prevTimeKey.split('-')[0])
         prevTimepointIndex = int(prevTimeKey.split('-')[1])
+        currentExperimentType = experimentTypes[currentScheduleIndex]
+        prevExperimentType = experimentTypes[prevScheduleIndex]
 
         timeObject1 = timeDict[prevTimeKey]    
         timeObject2 = timeDict[currentTimeKey] 
         timeDiff = timeObject2 - timeObject1
         minutes = int(timeDiff.total_seconds() / 60)
         scheduleRowsPerTimepoint = timeDiffDict[prevScheduleIndex]
-        timeDiffs+=[timepointDuration]*(scheduleRowsPerTimepoint-1)
-        minutes-=timepointDuration*(scheduleRowsPerTimepoint-1)
+        timeDiffs+=[timepointDuration[prevExperimentType]]*(scheduleRowsPerTimepoint-1)
+        minutes-=timepointDuration[prevExperimentType]*(scheduleRowsPerTimepoint-1)
         timeDiffs+=[minutes]
 
     #Add in subtimepoints for last timepoint, if needed
     scheduleRowsPerTimepoint = timeDiffDict[currentScheduleIndex]
-    timeDiffs+=[timepointDuration]*(scheduleRowsPerTimepoint-1)
+    timeDiffs+=[timepointDuration[currentExperimentType]]*(scheduleRowsPerTimepoint-1)
 
     matrixAssemblyList = []
     for timeKey in sortedTimeKeys:
@@ -130,7 +148,7 @@ def integrateExperiments(experimentIDs):
             matrixAssemblyList.append(lineToAdd)
 
     fullMatrix = np.vstack(matrixAssemblyList)
-    fullMatrix[:,-1] = timeDiffs
+    fullMatrix[:,-2] = timeDiffs
     
     name = 'Full_Matrix_OnlySup.txt'
     np.savetxt(finalPath+name,fullMatrix,fmt='%d',delimiter=',')

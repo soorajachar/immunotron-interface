@@ -7,7 +7,7 @@ import platform
 
 culturePlateLength = 12
 culturePlateWidth = 8
-timepointTemplates = {8:[3,7,15,23,35,47,59,72],12:[1,3,6,12,18,24,30,36,42,48,60,72],16:[1,3,5,7,11,15,19,23,29,35,41,47,53,59,65,72]}
+timepointTemplates = {6:[4,10,24,32,48,72],12:[1,3,6,12,18,24,30,36,42,48,60,72],8:[3,7,15,23,35,47,59,72],12:[1,3,6,12,18,24,30,36,42,48,60,72],16:[1,3,5,7,11,15,19,23,29,35,41,47,53,59,65,72]}
 
 schedulePath = 'schedules/' 
 matrixPath = 'matrices/'
@@ -24,6 +24,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     blankColumns = kwargs['blankColumns']
     numTimepoints = kwargs['numTimepoints']
     startTime = kwargs['startTime']
+    experimentType = kwargs['experimentType']
     #Make sure explicit zero timepoint does not cause issues
     timepointList = [0.0]+[x if x != 0 else 0.1 for x in kwargs['timepointlist']]
     daysAgo = kwargs['daysAgo']
@@ -36,8 +37,12 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         else:
             numConditionsPerCulturePlate = 96 
     
-    numCulturePlatesForExperiment = math.ceil(numConditions / numConditionsPerCulturePlate)
-    numCultureColumnsPerPlate = math.ceil(numConditions / culturePlateWidth / numCulturePlatesForExperiment)
+    if experimentType == 1:
+        numCulturePlatesForExperiment = math.ceil(numConditions / numConditionsPerCulturePlate)
+        numCultureColumnsPerPlate = math.ceil(numConditions / culturePlateWidth / numCulturePlatesForExperiment)
+    elif experimentType == 2:
+        numCulturePlatesForExperiment = numTimepoints
+        numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
 
     timepointIntervals = [t-s for s,t in zip(timepointList,timepointList[1:])]
 
@@ -48,8 +53,11 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
     #No need to change this; this is the culture plate shelf (should be the same in 384 format)
     numActualTimepoints = numTimepoints
-    numTimepoints *= numCulturePlatesForExperiment
-    plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
+    if experimentType == 1:
+        numTimepoints *= numCulturePlatesForExperiment
+        plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
+    elif experimentType == 2:
+        plateArray = np.array(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset))
 
     #No need to change this, this is the culture columns to aspirate (should be the same in 384 format)
     cultureColumnArray = np.zeros([numTimepoints,culturePlateLength])
@@ -66,9 +74,9 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
     supernatantColumnArray = np.zeros([numTimepoints,culturePlateLength])
     wellPoseArray = np.zeros([numTimepoints,culturePlateLength])
-    allColumns = np.tile(np.array(list(range(1,culturePlateLength+1))),numSupPlates*4)
+    allColumns = np.tile(np.array(list(range(1,culturePlateLength+1))),numSupPlates*4) # all columns in 96
     splitColumns = np.split(allColumns,numTimepoints)
-    allColumns2 = np.tile(np.array(list(range(1,culturePlateLength*4+1))),numSupPlates)
+    allColumns2 = np.tile(np.array(list(range(1,culturePlateLength*4+1))),numSupPlates) # all columns in 384
     splitColumns2 = np.split(allColumns2,numTimepoints)
 
     supernatantPlateArray = np.zeros([numTimepoints,culturePlateLength])
@@ -85,7 +93,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
                 plateNumber+=1
             if completeColumnCounter % culturePlateLength == 0:
                 wellPose+=1
-            timepointPlateArray[i] = ((plateNumber-1)%totalNumSupPlates)+min(platePoseRestriction)
+            timepointPlateArray[i] = platePoseRestriction[0 + ((plateNumber-1)%totalNumSupPlates)]
             timepointWellPoseArray[i] = wellPose % 4 
             completeColumnCounter+=1
         plateArrays.append(timepointPlateArray)
@@ -103,15 +111,21 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         supernatantPlateArray[timepoint,:numConditionColumns] = plateArrays[timepoint]
         supernatantLidArray[timepoint,0] = int(''.join(list(map(str,list(map(int,list(np.unique(plateArrays[timepoint]))))))))
         wellPoseArray[timepoint,:numConditionColumns] = wellPoseArrays[timepoint]
-        if timepoint % numCulturePlatesForExperiment == 0:
-            waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60-timeoffset*(numCulturePlatesForExperiment-1))
+        if experimentType == 1:
+            if timepoint % numCulturePlatesForExperiment == 0:
+                waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60-timeoffset*(numCulturePlatesForExperiment-1))
+                actualTimepoint+=1
+            else:
+                waitTimeArray[timepoint,0] = timeoffset
+        elif experimentType == 2:
+            waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60)
             actualTimepoint+=1
-        else:
-            waitTimeArray[timepoint,0] = timeoffset
+    
+    experimentArray = np.full((plateArray.shape[0],1), experimentType)
 
     plateArray = np.reshape(plateArray,(plateArray.shape[0],1))
 
-    fullMatrix = np.hstack([plateArray,supernatantLidArray,cultureColumnArray,supernatantPlateArray,supernatantColumnArray,wellPoseArray,waitTimeArray])
+    fullMatrix = np.hstack([plateArray,supernatantLidArray,cultureColumnArray,supernatantPlateArray,supernatantColumnArray,wellPoseArray,waitTimeArray, experimentArray])
 
     name='matrix_'+experimentID+'.txt'
     np.savetxt(matrixPath+name,fullMatrix,fmt='%d',delimiter=',')
@@ -136,7 +150,10 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
                 print(fullStartTime.strftime('Start Time: %Y-%m-%d %a %I:%M %p'),file=output,sep="\r\n")
             for i in range(0,len(baseTimeArrayHours)):
                 currentTimePointTime = fullStartTime + dt.timedelta(hours=baseTimeArrayHours[i])
-                print(currentTimePointTime.strftime('Timepoint '+str(i+1)+': %Y-%m-%d %a %I:%M %p' + ' ('+str(i+1+i*(numCulturePlatesForExperiment-1))+ ')'),file=output,sep="\r\n")
+                robotTimepoint = i+1
+                if experimentType == 1:
+                    robotTimepoint += +i*(numCulturePlatesForExperiment-1)
+                print(currentTimePointTime.strftime('Timepoint '+str(i+1)+': %Y-%m-%d %a %I:%M %p' + ' ('+str(robotTimepoint)+ ')'),file=output,sep="\r\n")
 
     timename = schedulePath+'schedule_'+experimentID+'.txt'
     createSchedule(timename)
@@ -152,6 +169,6 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     
     return numTimepoints
 
-def combineExperiments(experimentIDs,numRows,fullMatrix=[]):
-    integrateExperiments(experimentIDs)
+def combineExperiments(experimentIDs,experimentTypes,numRows,fullMatrix=[]):
+    integrateExperiments(experimentIDs,experimentTypes)
     np.savetxt(finalPath+'numTimepoints.txt',np.array([numRows]),fmt='%d',delimiter=',')
