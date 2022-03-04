@@ -20,6 +20,12 @@ if platform.system() == 'Windows':
 else:
     finalPath = ''
 
+
+experimentTypeDict = {
+        'Supernatant (Sooraj)':0,
+        'Supernatant+Fix/Perm (Madison)':1
+        }
+
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
     def __init__(self):
@@ -52,7 +58,7 @@ class ExperimentHomePage(tk.Frame):
  
         EMPTYTEXT = '-'
         NUMEXP = 4
-        allLabels = ['Experiment:','Name:','Incubator rack:','Cooling plate:','# conditions:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Change cooling plate:','Added to matrix:']
+        allLabels = ['Experiment:','Type (Author):','Name:','Incubator rack:','Cooling plate:','# conditions:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Change cooling plate:','Added to matrix:']
         
         if 'allExperimentParameters.pkl' not in os.listdir():
             self.allExperimentParameters = {k:{} for k in range(NUMEXP)}
@@ -60,6 +66,12 @@ class ExperimentHomePage(tk.Frame):
                 pickle.dump(self.allExperimentParameters,f)
         else:
             self.allExperimentParameters = pickle.load(open('allExperimentParameters.pkl','rb'))
+            #Temporary backwards compatibility
+            if 'experimentType' not in list(self.allExperimentParameters.keys()):
+                for eID in self.allExperimentParameters:
+                    if len(self.allExperimentParameters[eID].keys()) != 0:
+                        newDict = {**{'experimentType':list(experimentTypeDict.keys())[0]},**self.allExperimentParameters[eID]}
+                        self.allExperimentParameters[eID] = newDict
 
         expFrame = tk.Frame(self,borderwidth=0.8,relief=tk.SOLID)
         expFrame.pack()
@@ -419,11 +431,11 @@ class ExperimentInfoPage(tk.Frame):
                     reservedCooling += allExpParameters[exp]['platePoseRestriction']
         #Set defaults to saved values if entry already exists; does not quite work for multiplates
         tempExpParameters = allExpParameters[expNum]
-        expParameterList = ['experimentID','plateOffset','platePoseRestriction','numConditions','blankColumns','numTimepoints','startTime','timepointList','daysAgo']
-        defaultValueDict = {k:v for k,v in zip(expParameterList,['','  ',[True]*4,96,[False]*12,12,['  ','  ','  '],[],0])}
+        expParameterList = ['experimentType','experimentID','plateOffset','platePoseRestriction','numConditions','blankColumns','numTimepoints','startTime','timepointList','daysAgo']
+        defaultValueDict = {k:v for k,v in zip(expParameterList,[experimentTypeDict[list(experimentTypeDict.keys())[0]],'','  ',[True]*4,96,[False]*12,12,['  ','  ','  '],[],0])}
         for expParameter in expParameterList:
             if expParameter in tempExpParameters:
-                if expParameter in ['experimentID','numTimepoints','plateOffset','numConditions']:
+                if expParameter in ['experimentType','experimentID','numTimepoints','plateOffset','numConditions']:
                     defaultValueDict[expParameter] = tempExpParameters[expParameter]
                 elif expParameter == 'daysAgo':
                     timeDifference = datetime.today() - datetime.strptime(tempExpParameters['fullStart'],'%Y-%m-%d %a %I:%M %p') 
@@ -453,7 +465,7 @@ class ExperimentInfoPage(tk.Frame):
         def enableFinish(event=None):
             #Also check for re-enabling "enter timepoints" button
             try:
-                allWidgetChecks = [incubatorPlatePosVar.get(),meridianVar.get(),minuteVar.get()]
+                allWidgetChecks = [experimentTypeVar.get(),incubatorPlatePosVar.get(),meridianVar.get(),minuteVar.get()]
                 checkButtonChecks = [x.get() for x in coolingPlatePosVarList]
                 allWidgetBools = [experimentNameEntry.get() != '']+[x != '  ' for x in allWidgetChecks]+[any(checkButtonChecks)]
                 if all(allWidgetBools):
@@ -463,13 +475,19 @@ class ExperimentInfoPage(tk.Frame):
             except:
                 enterTpButton.config(state=tk.DISABLED)
                 
-        tk.Label(mainWindow,text='Experiment name:').grid(row=0,column=0,sticky=tk.W)
+        tk.Label(mainWindow,text='Experiment type:').grid(row=0,column=0,sticky=tk.W)
+        experimentTypeList = list(experimentTypeDict.keys()) 
+        experimentTypeVar = tk.StringVar()
+        experimentTypeDropdown = ttk.OptionMenu(mainWindow,experimentTypeVar,defaultValueDict['experimentType'],*experimentTypeList,command=lambda _: enableFinish())
+        experimentTypeDropdown.grid(row=0,column=1,sticky=tk.W)
+        
+        tk.Label(mainWindow,text='Experiment name:').grid(row=1,column=0,sticky=tk.W)
         experimentNameEntry = ttk.Entry(mainWindow,width=20)
         experimentNameEntry.insert(tk.END, str(defaultValueDict['experimentID']))
-        experimentNameEntry.grid(row=0,column=1,sticky=tk.W)
+        experimentNameEntry.grid(row=1,column=1,sticky=tk.W)
         experimentNameEntry.bind("<Key>",enableFinish)
 
-        startPos = 3
+        startPos = 4
         
         tk.Label(mainWindow,text='Incubator plate position:').grid(row=startPos,column=0,sticky=tk.W)
         incubatorPlatePosList = list(range(1,23)) 
@@ -477,11 +495,11 @@ class ExperimentInfoPage(tk.Frame):
         incubatorPlatePosDropdown = ttk.OptionMenu(mainWindow,incubatorPlatePosVar,defaultValueDict['plateOffset'],*incubatorPlatePosList,command=lambda _: enableFinish())
         incubatorPlatePosDropdown.grid(row=startPos,column=1,sticky=tk.W)
         
-        tk.Label(mainWindow,text='Cooling plate positions:').grid(row=2,column=0,sticky=tk.W)
+        tk.Label(mainWindow,text='Cooling plate positions:').grid(row=3,column=0,sticky=tk.W)
         coolingPlatePosList = list(range(1,5))
         coolingPlatePosCBList,coolingPlatePosVarList = [],[]
         coolingCBFrame = tk.Frame(mainWindow)
-        coolingCBFrame.grid(row=2,column=1,sticky=tk.W)
+        coolingCBFrame.grid(row=3,column=1,sticky=tk.W)
         for pos in coolingPlatePosList:
             coolingPlatePosVar = tk.BooleanVar(value=defaultValueDict['platePoseRestriction'][pos-1])
             coolingPlatePosCB = ttk.Checkbutton(coolingCBFrame,variable=coolingPlatePosVar)
@@ -517,11 +535,11 @@ class ExperimentInfoPage(tk.Frame):
             for invalidTimepoint in invalidTimepoints:
                 timepointNumberDropdown['menu'].entryconfigure(invalidTimepoint-1, state = "disabled")
 
-        tk.Label(mainWindow,text='Number of conditions:').grid(row=1,column=0,sticky=tk.W)
+        tk.Label(mainWindow,text='Number of conditions:').grid(row=2,column=0,sticky=tk.W)
         conditionNumberList =[16,24,32,48,56,64,72,80,88,96,128,192,288,384]
         conditionNumberVar = tk.IntVar()
         conditionNumberDropdown = ttk.OptionMenu(mainWindow,conditionNumberVar,defaultValueDict['numConditions'],*conditionNumberList,command=lambda _: disableIncubatorEntries())
-        conditionNumberDropdown.grid(row=1,column=1,sticky=tk.W)
+        conditionNumberDropdown.grid(row=2,column=1,sticky=tk.W)
         
         #Disable racks that are already occupied
         plateDisablingRadius = math.ceil(defaultValueDict['numConditions']/96)-1
@@ -542,7 +560,7 @@ class ExperimentInfoPage(tk.Frame):
             blankCBList.append(blankCB)
             blankVarList.append(blankVar)
         
-        startPos2 = 5 
+        startPos2 = 6
 
         #tk.Label(mainWindow,text='Number of timepoints:').grid(row=startPos2,column=0,sticky=tk.W)
         #timepointNumberEntry = ttk.Entry(mainWindow,width=5)
@@ -577,6 +595,7 @@ class ExperimentInfoPage(tk.Frame):
         
         def collectInputs():
             experimentParameters = {}
+            experimentParameters['experimentType'] = experimentTypeVar.get()
             experimentParameters['experimentID'] = experimentNameEntry.get()
             experimentParameters['plateOffset'] = incubatorPlatePosVar.get()
             experimentParameters['platePoseRestriction'] = [x+1 for x in range(4) if coolingPlatePosVarList[x].get()]
