@@ -9,6 +9,11 @@ culturePlateLength = 12
 culturePlateWidth = 8
 timepointTemplates = {6:[4,10,24,32,48,72],12:[1,3,6,12,18,24,30,36,42,48,60,72],8:[3,7,15,23,35,47,59,72],12:[1,3,6,12,18,24,30,36,42,48,60,72],16:[1,3,5,7,11,15,19,23,29,35,41,47,53,59,65,72]}
 
+experimentTypeDict = {
+        'Supernatant (Sooraj)':1,
+        'Supernatant+Fix/Perm (Madison)':2
+        }
+
 schedulePath = 'schedules/' 
 matrixPath = 'matrices/'
 if platform.system() == 'Windows':
@@ -24,7 +29,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     blankColumns = kwargs['blankColumns']
     numTimepoints = kwargs['numTimepoints']
     startTime = kwargs['startTime']
-    experimentType = kwargs['experimentType']
+    experimentType = experimentTypeDict[kwargs['experimentType']]
     #Make sure explicit zero timepoint does not cause issues
     timepointList = [0.0]+[x if x != 0 else 0.1 for x in kwargs['timepointlist']]
     daysAgo = kwargs['daysAgo']
