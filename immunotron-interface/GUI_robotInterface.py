@@ -23,9 +23,9 @@ else:
 
 experimentTypeDict = {
         'Supernatant (Sooraj)':1,
-        'Supernatant+Fix/Perm (Madison)':2
+        'Supernatant+Fix/Perm (Madison)':2,
+        'Reverse Plating (Anagha)':3
         }
-
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
     def __init__(self):
