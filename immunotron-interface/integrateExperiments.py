@@ -13,6 +13,8 @@ else:
     finalPath = ''
 
 def integrateExperiments(experimentIDs, experimentTypes):
+    print(experimentIDs)
+    print(experimentTypes)
     timeFormat = '%Y-%m-%d %a %I:%M %p'
     #CHANGE THIS WHEN CHANGING PROTOCOL
     timepointDuration = {1:14, 2:75, 3:60}
