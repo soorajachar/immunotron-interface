@@ -22,10 +22,10 @@ else:
 
 
 experimentTypeDict = {
-        'Supernatant (Sooraj)':0,
-        'Supernatant+Fix/Perm (Madison)':1
+        'Supernatant (Sooraj)':1,
+        'Supernatant+Fix/Perm (Madison)':2,
+        'Reverse Plating (Anagha)':3
         }
-
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
     def __init__(self):
@@ -72,7 +72,7 @@ class ExperimentHomePage(tk.Frame):
                     if len(self.allExperimentParameters[eID].keys()) != 0:
                         newDict = {**{'experimentType':list(experimentTypeDict.keys())[0]},**self.allExperimentParameters[eID]}
                         self.allExperimentParameters[eID] = newDict
-
+        
         expFrame = tk.Frame(self,borderwidth=0.8,relief=tk.SOLID)
         expFrame.pack()
         labelFrame = tk.Frame(expFrame)
@@ -362,12 +362,15 @@ class ExperimentHomePage(tk.Frame):
             allProgressBars.append(pb)
 
         def generateFullMatrix():
-            experimentIDsToIntegrate,experimentsToIntegrate = [],[]
+            experimentIDsToIntegrate,experimentTypesToIntegrate,experimentsToIntegrate = [],[],[]
             for i,l in enumerate(self.allExpInfoLabels):
-                expName = l[0]['text']
+                expName = l[1]['text']
                 if expName != EMPTYTEXT:
+                    experimentType = self.allExperimentParameters[i]['experimentType']
+                    experimentType = experimentTypeDict[experimentType]
                     experimentIDsToIntegrate.append(expName)
                     experimentsToIntegrate.append(i)
+                    experimentTypesToIntegrate.append(experimentType)
             if len(experimentsToIntegrate) == 0:
                 messagebox.showwarning(title='Error',message='At least one experiment must be created before a matrix can be generated. Please try again.')
             else:
@@ -385,7 +388,9 @@ class ExperimentHomePage(tk.Frame):
                         
                         tempNumRows = generateExperimentMatrix(singleExperiment=False,**self.allExperimentParameters[exp])
                         numRows+=tempNumRows
-                    combineExperiments(experimentIDsToIntegrate,numRows)
+                    print(experimentIDsToIntegrate)
+                    print(experimentTypesToIntegrate)
+                    combineExperiments(experimentIDsToIntegrate,experimentTypesToIntegrate,numRows)
                 messagebox.showinfo(title='Success',message='Experiment matrix generated!')
                 for exp in experimentsToIntegrate:
                     self.allExperimentParameters[exp]['addedToMatrix'] = True
@@ -421,6 +426,7 @@ class ExperimentInfoPage(tk.Frame):
         
         #Disallow selection of cooling positions and incubator positions that are currently in use
         allExpParameters = pickle.load(open('allExperimentParameters.pkl','rb'))
+        print(allExpParameters)
         reservedRacks,reservedCooling = [],[]
         for exp in allExpParameters:
             if exp != expNum:
@@ -432,7 +438,7 @@ class ExperimentInfoPage(tk.Frame):
         #Set defaults to saved values if entry already exists; does not quite work for multiplates
         tempExpParameters = allExpParameters[expNum]
         expParameterList = ['experimentType','experimentID','plateOffset','platePoseRestriction','numConditions','blankColumns','numTimepoints','startTime','timepointList','daysAgo']
-        defaultValueDict = {k:v for k,v in zip(expParameterList,[experimentTypeDict[list(experimentTypeDict.keys())[0]],'','  ',[True]*4,96,[False]*12,12,['  ','  ','  '],[],0])}
+        defaultValueDict = {k:v for k,v in zip(expParameterList,[list(experimentTypeDict.keys())[0],'','  ',[True]*4,96,[False]*12,12,['  ','  ','  '],[],0])}
         for expParameter in expParameterList:
             if expParameter in tempExpParameters:
                 if expParameter in ['experimentType','experimentID','numTimepoints','plateOffset','numConditions']:
@@ -523,7 +529,7 @@ class ExperimentInfoPage(tk.Frame):
             for reservedRack in reservedRacks:
                 for i in range(max(reservedRack-plateDisablingRadius,1),reservedRack+1):
                     incubatorPlatePosDropdown['menu'].entryconfigure(i-1, state = "disabled")
-            disableTimepointEntries()
+            #disableTimepointEntries()
 
         timepointNumberList = list(range(1,25))
         def disableTimepointEntries():
@@ -536,7 +542,7 @@ class ExperimentInfoPage(tk.Frame):
                 timepointNumberDropdown['menu'].entryconfigure(invalidTimepoint-1, state = "disabled")
 
         tk.Label(mainWindow,text='Number of conditions:').grid(row=2,column=0,sticky=tk.W)
-        conditionNumberList =[16,24,32,48,56,64,72,80,88,96,128,192,288,384]
+        conditionNumberList =[16,24,32,48,56,64,72,80,88,96,128,192,256,288,384]
         conditionNumberVar = tk.IntVar()
         conditionNumberDropdown = ttk.OptionMenu(mainWindow,conditionNumberVar,defaultValueDict['numConditions'],*conditionNumberList,command=lambda _: disableIncubatorEntries())
         conditionNumberDropdown.grid(row=2,column=1,sticky=tk.W)
@@ -615,7 +621,7 @@ class ExperimentInfoPage(tk.Frame):
 
             master.switch_frame(TimepointEntryPage,expNum,experimentParameters)
         
-        disableTimepointEntries()
+        #disableTimepointEntries()
 
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,pady=20)
@@ -632,6 +638,7 @@ class TimepointEntryPage(tk.Frame):
         mainWindow.pack(side=tk.TOP,padx=10)
         
         timepointTemplates = {
+                6: [4, 10, 24, 32, 48, 72],
                 8:[3,7,15,23,35,47,59,72],
                 12:[1,3,6,12,18,24,30,36,42,48,60,72],
                 16:[1,3,5,7,11,15,19,23,29,35,41,47,53,59,65,72],
