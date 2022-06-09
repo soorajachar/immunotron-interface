@@ -388,8 +388,7 @@ class ExperimentHomePage(tk.Frame):
                         
                         tempNumRows = generateExperimentMatrix(singleExperiment=False,**self.allExperimentParameters[exp])
                         numRows+=tempNumRows
-                    print(experimentIDsToIntegrate)
-                    print(experimentTypesToIntegrate)
+
                     combineExperiments(experimentIDsToIntegrate,experimentTypesToIntegrate,numRows)
                 messagebox.showinfo(title='Success',message='Experiment matrix generated!')
                 for exp in experimentsToIntegrate:
@@ -529,7 +528,7 @@ class ExperimentInfoPage(tk.Frame):
             for reservedRack in reservedRacks:
                 for i in range(max(reservedRack-plateDisablingRadius,1),reservedRack+1):
                     incubatorPlatePosDropdown['menu'].entryconfigure(i-1, state = "disabled")
-            disableTimepointEntries()
+            #disableTimepointEntries()
 
         timepointNumberList = list(range(1,25))
         def disableTimepointEntries():
@@ -621,7 +620,7 @@ class ExperimentInfoPage(tk.Frame):
 
             master.switch_frame(TimepointEntryPage,expNum,experimentParameters)
         
-        disableTimepointEntries()
+        #disableTimepointEntries()
 
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,pady=20)
@@ -638,6 +637,7 @@ class TimepointEntryPage(tk.Frame):
         mainWindow.pack(side=tk.TOP,padx=10)
         
         timepointTemplates = {
+                6: [4, 10, 24, 32, 48, 72],
                 8:[3,7,15,23,35,47,59,72],
                 12:[1,3,6,12,18,24,30,36,42,48,60,72],
                 16:[1,3,5,7,11,15,19,23,29,35,41,47,53,59,65,72],

@@ -1,6 +1,7 @@
 import json,pickle,math,sys,os,string
 from datetime import datetime
 import datetime as dt
+import time
 import numpy as np
 from integrateExperiments import integrateExperiments
 import platform
@@ -65,11 +66,18 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
         #No need to change this; this is the culture plate shelf (should be the same in 384 format)
         numActualTimepoints = numTimepoints
+        #Allows for experiments to take up incomplete 384-well plates
+        tempTimepoints = 0
+        while numTimepoints*culturePlateLength % 48 != 0:
+            tempTimepoints += 1
+            numTimepoints += 1
+            timepointList.append(timepointList[-1]+1.0)
+            timepointIntervals.append(1.0)
         if experimentType == 1:
             numTimepoints *= numCulturePlatesForExperiment
             plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
         elif experimentType == 2:
-            plateArray = np.array(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset))
+            plateArray = np.array(range(1+plateOffset,numTimepoints+1+plateOffset))
 
         #No need to change this, this is the culture columns to aspirate (should be the same in 384 format)
         cultureColumnArray = np.zeros([numTimepoints,culturePlateLength])
@@ -138,6 +146,12 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         plateArray = np.reshape(plateArray,(plateArray.shape[0],1))
 
         fullMatrix = np.hstack([plateArray,supernatantLidArray,cultureColumnArray,supernatantPlateArray,supernatantColumnArray,wellPoseArray,waitTimeArray, experimentArray])
+        if tempTimepoints > 0:
+            fullMatrix = fullMatrix[:-1*tempTimepoints]
+        for i in range(tempTimepoints):
+            timepointList.pop()
+            timepointIntervals.pop()
+            numTimepoints -= 1
 
         name='matrix_'+experimentID+'.txt'
         np.savetxt(matrixPath+name,fullMatrix,fmt='%d',delimiter=',')
