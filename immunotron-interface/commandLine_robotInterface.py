@@ -161,6 +161,119 @@ def createSchedule(timename):
 timename = schedulePath+'schedule_'+experimentID+'.txt'
 createSchedule(timename)
 
+def generateExperimentMatrix_Anagha(singleExperiment=True, **kwargs):
+    # INPUTS AND CONSTANTS
+    experimentID = kwargs['experimentID']
+    plateOffset = kwargs['plateOffset'] - 1
+    platePoseRestriction = kwargs['platePoseRestriction']
+    numConditions = kwargs['numConditions']
+    blankColumns = kwargs['blankColumns']
+    numTimepoints = kwargs['numTimepoints']
+    startTime = kwargs['startTime']
+    experimentType = kwargs['experimentType']
+    # Make sure explicit zero timepoint does not cause issues
+    timepointList = [0.0] + [x if x != 0 else 0.1 for x in kwargs['timepointlist']]
+    daysAgo = kwargs['daysAgo']
+
+    schedulePath = 'schedules/'
+    matrixPath = 'matrices/'
+    if platform.system() == 'Windows':
+        finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+    else:
+        finalPath = ''
+
+    if experimentType == 3:
+        numCulturePlatesForExperiment = math.ceil(numConditions / 96)
+        numCultureColumnsPerTimepoint = math.ceil(numConditions / culturePlateWidth / numTimepoints)
+
+    # a list of which incubator plates to remove
+    incPlateList = []
+    for timepointNum in range(numTimepoints):
+        plateNum = math.ceil(numCultureColumnsPerTimepoint * (timepointNum + 1) / culturePlateLength)
+        incPlateList.append(plateNum)
+    incPlateArray = np.array(incPlateList)
+    incPlateArray = np.reshape(incPlateArray, (incPlateArray.shape[0], 1))
+
+    # cooling plate lids to remove
+    coolingPlateLidArray = np.zeros([numTimepoints, 1], dtype=int)
+
+    # media and coculture plates to pipette between
+    pipetteList = []
+    for timepointNum in range(numTimepoints):
+        for colNum in range(numCultureColumnsPerTimepoint):
+            pipetteList.append((timepointNum * numCultureColumnsPerTimepoint + colNum) % culturePlateLength + 1)
+        for blankCol in range(culturePlateLength - numCultureColumnsPerTimepoint):
+            pipetteList.append(0)
+    pipetteArray = np.array(pipetteList)
+    pipetteArray = np.reshape(pipetteArray, [numTimepoints, culturePlateLength])
+
+    # cooling plate positions to transfer supernatant to
+    coolingPlatePosArray = np.zeros([numTimepoints, culturePlateLength], dtype=int)
+
+    # cooling plate columns to transfer supernatant to
+    coolingPlateColArray = np.zeros([numTimepoints, culturePlateLength], dtype=int)
+
+    # cooling plate well pos to transfer supernatant to
+    coolingPlateWellPosArray = np.zeros([numTimepoints, culturePlateLength], dtype=int)
+
+    # time to next timepoint
+    timeOffset = 5.0
+    timepointIntervals = [int((t - s) * 60 - timeOffset) for s, t in zip(timepointList, timepointList[1:])]
+    timeArray = np.array(timepointIntervals)
+    timeArray = np.reshape(timeArray, (timeArray.shape[0], 1))
+
+    # experiment number
+    expNoArray = np.tile(3, numTimepoints)
+    expNoArray = np.reshape(expNoArray, (expNoArray.shape[0], 1))
+
+    # join arrays together
+    joinedArray = np.hstack(
+        [incPlateArray, coolingPlateLidArray, pipetteArray, coolingPlatePosArray, coolingPlateColArray,
+         coolingPlateWellPosArray, timeArray, expNoArray])
+
+    # save matrix as a txt file
+    name = 'matrix_' + experimentID + '.txt'
+    np.savetxt(matrixPath + name, joinedArray, fmt='%d', delimiter=',')
+
+    # Produces file that contains the times each time point are performed
+
+    def createSchedule(timename, master=False):
+        baseTimeArrayHours = timepointList[1:]
+        now = datetime.today() - dt.timedelta(days=daysAgo)
+        parsedStartTime = datetime.strptime(startTime, '%I:%M %p')
+        fullStartTime = datetime(now.year, now.month, now.day, parsedStartTime.hour, parsedStartTime.minute)
+        currentTimePointTime = fullStartTime
+        with open(timename, 'w') as output:
+            print('USE TIMEPOINTS IN PARENTHESES TO SET TIMEPOINT ON ROBOT', file=output, sep="\r\n")
+            if master:
+                print(file=output, sep="\r\n")
+                print('Experiment ' + experimentID + ' ' + fullStartTime.strftime('Start Time: %Y-%m-%d %a %I:%M %p'),
+                      file=output)
+                print(file=output, sep="\r\n")
+            else:
+                print(fullStartTime.strftime('Start Time: %Y-%m-%d %a %I:%M %p'), file=output, sep="\r\n")
+            for i in range(0, len(baseTimeArrayHours)):
+                currentTimePointTime = fullStartTime + dt.timedelta(hours=baseTimeArrayHours[i])
+                robotTimepoint = i + 1
+                if experimentType == 1:
+                    robotTimepoint += +i * (numCulturePlatesForExperiment - 1)
+                print(currentTimePointTime.strftime(
+                    'Timepoint ' + str(i + 1) + ': %Y-%m-%d %a %I:%M %p' + ' (' + str(robotTimepoint) + ')'),
+                      file=output, sep="\r\n")
+
+    timename = schedulePath + 'schedule_' + experimentID + '.txt'
+    createSchedule(timename)
+
+    if singleExperiment:
+        np.savetxt(finalPath + 'numTimepoints.txt', np.array([numTimepoints]), fmt='%d', delimiter=',')
+        name = 'Full_Matrix_OnlySup.txt'
+        np.savetxt(finalPath + name, fullMatrix, fmt='%d', delimiter=',')
+        timename = 'masterSchedule.txt'
+        createSchedule(timename, master=True)
+        timename = schedulePath + 'masterSchedule.txt'
+        createSchedule(timename, master=True)
+    return numTimepoints
+
 if integratingExperiments != '':
     experimentIDs = integratingExperiments.split(',')
     if experimentID not in experimentIDs:
