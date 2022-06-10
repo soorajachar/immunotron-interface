@@ -67,7 +67,6 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
         #No need to change this; this is the culture plate shelf (should be the same in 384 format)
         numActualTimepoints = numTimepoints
-
         #Allows for experiments to take up incomplete 384-well plates
         tempTimepoints = 0
         while numTimepoints*culturePlateLength % 48 != 0:
@@ -75,7 +74,6 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             numTimepoints += 1
             timepointList.append(timepointList[-1]+1.0)
             timepointIntervals.append(1.0)
-
         if experimentType == 1:
             numTimepoints *= numCulturePlatesForExperiment
             plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
