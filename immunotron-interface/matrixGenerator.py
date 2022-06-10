@@ -37,6 +37,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     numTimepoints = kwargs['numTimepoints']
     startTime = kwargs['startTime']
     experimentType = experimentTypeDict[kwargs['experimentType']]
+
     if experimentType in [1,2,4]:
         #Make sure explicit zero timepoint does not cause issues
         timepointList = [0.0]+[x if x != 0 else 0.1 for x in kwargs['timepointlist']]
@@ -70,7 +71,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             numTimepoints *= numCulturePlatesForExperiment
             plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
         elif experimentType in [2,4]:
-            plateArray = np.array(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset))
+            plateArray = np.array(range(1+plateOffset,numTimepoints+1+plateOffset))
 
         #No need to change this, this is the culture columns to aspirate (should be the same in 384 format)
         cultureColumnArray = np.zeros([numTimepoints,culturePlateLength])

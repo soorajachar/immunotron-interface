@@ -427,7 +427,6 @@ class ExperimentInfoPage(tk.Frame):
         
         #Disallow selection of cooling positions and incubator positions that are currently in use
         allExpParameters = pickle.load(open('allExperimentParameters.pkl','rb'))
-        print(allExpParameters)
         reservedRacks,reservedCooling = [],[]
         for exp in allExpParameters:
             if exp != expNum:
