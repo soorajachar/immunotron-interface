@@ -18,6 +18,7 @@ def integrateExperiments(experimentIDs, experimentTypes):
     timeFormat = '%Y-%m-%d %a %I:%M %p'
     #CHANGE THIS WHEN CHANGING PROTOCOL
     timepointDuration = {1:14, 2:75, 3:60, 4:120}
+
     
     #Sort experiment start times:
     startTimeDict = {}

@@ -1,7 +1,6 @@
 import json,pickle,math,sys,os,string
 from datetime import datetime
 import datetime as dt
-import time
 import numpy as np
 from integrateExperiments import integrateExperiments
 import platform
@@ -38,7 +37,8 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     numTimepoints = kwargs['numTimepoints']
     startTime = kwargs['startTime']
     experimentType = experimentTypeDict[kwargs['experimentType']]
-    if experimentType in [1,2, 4]:
+
+    if experimentType in [1,2,4]:
         #Make sure explicit zero timepoint does not cause issues
         timepointList = [0.0]+[x if x != 0 else 0.1 for x in kwargs['timepointlist']]
         daysAgo = kwargs['daysAgo']
@@ -54,7 +54,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         if experimentType == 1:
             numCulturePlatesForExperiment = math.ceil(numConditions / numConditionsPerCulturePlate)
             numCultureColumnsPerPlate = math.ceil(numConditions / culturePlateWidth / numCulturePlatesForExperiment)
-        elif experimentType in [2, 4]:
+        elif experimentType in [2,4]:
             numCulturePlatesForExperiment = numTimepoints
             numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
 
@@ -67,17 +67,10 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
         #No need to change this; this is the culture plate shelf (should be the same in 384 format)
         numActualTimepoints = numTimepoints
-        #Allows for experiments to take up incomplete 384-well plates
-        tempTimepoints = 0
-        while numTimepoints*culturePlateLength % 48 != 0:
-            tempTimepoints += 1
-            numTimepoints += 1
-            timepointList.append(timepointList[-1]+1.0)
-            timepointIntervals.append(1.0)
         if experimentType == 1:
             numTimepoints *= numCulturePlatesForExperiment
             plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
-        elif experimentType in [2, 4]:
+        elif experimentType in [2,4]:
             plateArray = np.array(range(1+plateOffset,numTimepoints+1+plateOffset))
 
         #No need to change this, this is the culture columns to aspirate (should be the same in 384 format)
@@ -138,7 +131,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
                     actualTimepoint+=1
                 else:
                     waitTimeArray[timepoint,0] = timeoffset
-            elif experimentType in [2, 4]:
+            elif experimentType in [2,4]:
                 waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60)
                 actualTimepoint+=1
         
@@ -147,12 +140,6 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         plateArray = np.reshape(plateArray,(plateArray.shape[0],1))
 
         fullMatrix = np.hstack([plateArray,supernatantLidArray,cultureColumnArray,supernatantPlateArray,supernatantColumnArray,wellPoseArray,waitTimeArray, experimentArray])
-        if tempTimepoints > 0:
-            fullMatrix = fullMatrix[:-1*tempTimepoints]
-        for i in range(tempTimepoints):
-            timepointList.pop()
-            timepointIntervals.pop()
-            numTimepoints -= 1
 
         name='matrix_'+experimentID+'.txt'
         np.savetxt(matrixPath+name,fullMatrix,fmt='%d',delimiter=',')
