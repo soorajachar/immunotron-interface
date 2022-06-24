@@ -24,7 +24,8 @@ else:
 experimentTypeDict = {
         'Supernatant (Sooraj)':1,
         'Supernatant+Fix/Perm (Madison)':2,
-        'Reverse Plating (Anagha)':3
+        'Reverse Plating (Anagha)':3,
+        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4
         }
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
@@ -195,7 +196,8 @@ class ExperimentHomePage(tk.Frame):
             if maxPlateChangeLen > 0:
                 decrement = maxPlateChangeLen*2 - 1
                 self.headerLabels[-2].configure(text='\n'.join([allLabels[-2]]+['']*decrement))
-            
+            # REMOVE diti warning (calculations out of date)
+            """             
             #Update diti warning label
             if "masterSchedule.txt" in os.listdir():
                 with open("masterSchedule.txt", "r") as schedule:
@@ -300,7 +302,7 @@ class ExperimentHomePage(tk.Frame):
                         if noCount > 0:
                             quitButton.config(state=tk.DISABLED)
                         else:
-                            quitButton.config(state=tk.NORMAL)
+                            quitButton.config(state=tk.NORMAL) """
 
             #ttk.Separator(expFrame, orient='horizontal').place(relx=0,rely=0+separatorOffset*(len(allLabels)-1+maxPlateChangeLen),relwidth=1)
             self.after(60000, updateExperimentLabels)

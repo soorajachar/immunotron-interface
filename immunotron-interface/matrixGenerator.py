@@ -13,7 +13,8 @@ timepointTemplates = {6:[4,10,24,32,48,72],12:[1,3,6,12,18,24,30,36,42,48,60,72]
 experimentTypeDict = {
         'Supernatant (Sooraj)':1,
         'Supernatant+Fix/Perm (Madison)':2,
-        'Reverse Plating (Anagha)':3
+        'Reverse Plating (Anagha)':3,
+        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4
         }
 schedulePath = 'schedules/' 
 matrixPath = 'matrices/'
@@ -37,7 +38,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     numTimepoints = kwargs['numTimepoints']
     startTime = kwargs['startTime']
     experimentType = experimentTypeDict[kwargs['experimentType']]
-    if experimentType in [1,2]:
+    if experimentType in [1,2,4]:
         #Make sure explicit zero timepoint does not cause issues
         timepointList = [0.0]+[x if x != 0 else 0.1 for x in kwargs['timepointlist']]
         daysAgo = kwargs['daysAgo']
@@ -53,7 +54,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         if experimentType == 1:
             numCulturePlatesForExperiment = math.ceil(numConditions / numConditionsPerCulturePlate)
             numCultureColumnsPerPlate = math.ceil(numConditions / culturePlateWidth / numCulturePlatesForExperiment)
-        elif experimentType == 2:
+        elif experimentType in [2,4]:
             numCulturePlatesForExperiment = numTimepoints
             numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
 
@@ -78,7 +79,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         if experimentType == 1:
             numTimepoints *= numCulturePlatesForExperiment
             plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
-        elif experimentType == 2:
+        elif experimentType in [2,4]:
             plateArray = np.array(range(1+plateOffset,numTimepoints+1+plateOffset))
 
         #No need to change this, this is the culture columns to aspirate (should be the same in 384 format)
@@ -139,7 +140,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
                     actualTimepoint+=1
                 else:
                     waitTimeArray[timepoint,0] = timeoffset
-            elif experimentType == 2:
+            elif experimentType in [2,4]:
                 waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60)
                 actualTimepoint+=1
         
