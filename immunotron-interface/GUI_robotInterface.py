@@ -196,7 +196,8 @@ class ExperimentHomePage(tk.Frame):
             if maxPlateChangeLen > 0:
                 decrement = maxPlateChangeLen*2 - 1
                 self.headerLabels[-2].configure(text='\n'.join([allLabels[-2]]+['']*decrement))
-            
+            # REMOVE diti warning (calculations out of date)
+                         
             #Update diti warning label
             if "masterSchedule.txt" in os.listdir():
                 with open("masterSchedule.txt", "r") as schedule:
@@ -207,8 +208,8 @@ class ExperimentHomePage(tk.Frame):
                     if 'Experiment ' in line:
                         numExperiments+=1
                 singleExperiment = numExperiments == 1
-                wafers = int(np.loadtxt(finalPath+'DiTisite.txt'))
-                remainingRows = 15-wafers-1
+                #wafers = int(np.loadtxt(finalPath+'DiTisite.txt'))
+                #remainingRows = 15-wafers-1
 
                 currentRow = 0
                 currentLine = 0
@@ -230,6 +231,7 @@ class ExperimentHomePage(tk.Frame):
                             currentLine = i
                         else:
                             nextTimepointExists = True
+                            '''
                             cutoff = currentRow + remainingRows
                             if row > cutoff and (cutoff != 0):
                                 #Determine whether previous timepoint could finish
@@ -239,6 +241,7 @@ class ExperimentHomePage(tk.Frame):
                                 else:
                                     finalTimepoint = lines[i-1]
                                 break
+                        '''
                 nextTimepointLine = 0
                 if nextTimepointExists:
                     for i,line in enumerate(lines):
@@ -272,7 +275,7 @@ class ExperimentHomePage(tk.Frame):
                         nextTimepointLabel.configure(text=nextTimepointString)
                     else:
                         nextTimepointLabel.configure(text='')
-
+                """
                 #Update diti warning label
                 if finalTimepoint == '':
                     ditiWarningLabel.config(text='')
@@ -284,7 +287,7 @@ class ExperimentHomePage(tk.Frame):
                             expID = finalTimepoint.split(': ')[0].split('-')[1]
                         tipChangeDeadline = finalTimepoint.split(': ')[1].split(' (')[0]
                         ditiWarningLabel.config(text='Change tips before '+tipChangeDeadline+' ('+expID+' timepoint)')
-                
+                """
                 for exp in range(NUMEXP):
                     allAddedStrings = [self.allExpInfoLabels[exp][-1]['text'] for exp in range(NUMEXP)]
                     emptyCount = 0

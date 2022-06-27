@@ -37,7 +37,6 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     numTimepoints = kwargs['numTimepoints']
     startTime = kwargs['startTime']
     experimentType = experimentTypeDict[kwargs['experimentType']]
-
     if experimentType in [1,2,4]:
         #Make sure explicit zero timepoint does not cause issues
         timepointList = [0.0]+[x if x != 0 else 0.1 for x in kwargs['timepointlist']]
