@@ -532,7 +532,7 @@ class ExperimentInfoPage(tk.Frame):
             for reservedRack in reservedRacks:
                 for i in range(max(reservedRack-plateDisablingRadius,1),reservedRack+1):
                     incubatorPlatePosDropdown['menu'].entryconfigure(i-1, state = "disabled")
-            disableTimepointEntries()
+            #disableTimepointEntries()
 
         timepointNumberList = list(range(1,25))
         def disableTimepointEntries():
@@ -624,7 +624,7 @@ class ExperimentInfoPage(tk.Frame):
 
             master.switch_frame(TimepointEntryPage,expNum,experimentParameters)
         
-        disableTimepointEntries()
+        #disableTimepointEntries()
 
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,pady=20)
