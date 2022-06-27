@@ -70,6 +70,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
         #Allows for experiments to take up incomplete 384-well plates
         tempTimepoints = 0
+        
         while numTimepoints*culturePlateLength % 48 != 0:
             tempTimepoints += 1
             numTimepoints += 1
@@ -149,6 +150,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         plateArray = np.reshape(plateArray,(plateArray.shape[0],1))
 
         fullMatrix = np.hstack([plateArray,supernatantLidArray,cultureColumnArray,supernatantPlateArray,supernatantColumnArray,wellPoseArray,waitTimeArray, experimentArray])
+
         if tempTimepoints > 0:
             fullMatrix = fullMatrix[:-1*tempTimepoints]
         for i in range(tempTimepoints):
