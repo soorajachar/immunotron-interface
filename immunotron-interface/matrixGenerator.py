@@ -72,7 +72,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         #Allows for experiments to take up incomplete 384-well plates
         tempTimepoints = 0
         
-        while numTimepoints*culturePlateLength % 48 != 0:
+        while numTimepoints*numCultureColumnsPerPlate % 48 != 0:
             tempTimepoints += 1
             numTimepoints += 1
             timepointList.append(timepointList[-1]+1.0)
