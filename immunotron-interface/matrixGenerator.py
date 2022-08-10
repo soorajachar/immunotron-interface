@@ -73,7 +73,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         #Allows for experiments to take up incomplete 384-well plates
         numActualTimepoints = numTimepoints
         tempTimepoints = 0
-        
+
         while numTimepoints*numCultureColumnsPerPlate % 48 != 0: #48 columns available per 384 (24 across * 2 rows), add padding timepoints to ensure "full" plate
             tempTimepoints += 1
             numTimepoints += 1
