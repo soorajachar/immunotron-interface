@@ -1,3 +1,4 @@
+
 import json,pickle,math,sys,os,string
 from datetime import datetime
 import datetime as dt
@@ -78,6 +79,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             numTimepoints += 1
             timepointList.append(timepointList[-1]+1.0)
             timepointIntervals.append(1.0)
+
         # For a supernatant experiment (same plate(s) throughout), add a "timepoint" for each plate in the experiment (ex. 2 lines for 2 plates) and make list of incubator positions
         if experimentType == 1:
             numTimepoints *= numCulturePlatesForExperiment
@@ -166,6 +168,13 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         52: Robot protocol
         '''
         # Remove padding timepoints
+        if tempTimepoints > 0:
+            fullMatrix = fullMatrix[:-1*tempTimepoints]
+        for i in range(tempTimepoints):
+            timepointList.pop()
+            timepointIntervals.pop()
+            numTimepoints -= 1
+
         if tempTimepoints > 0:
             fullMatrix = fullMatrix[:-1*tempTimepoints]
         for i in range(tempTimepoints):
