@@ -7,6 +7,7 @@ import platform
 
 schedulePath = 'schedules/' 
 matrixPath = 'matrices/'
+
 if platform.system() == 'Windows':
     finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
 else:

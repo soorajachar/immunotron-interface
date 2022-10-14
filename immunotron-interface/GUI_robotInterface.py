@@ -20,7 +20,6 @@ if platform.system() == 'Windows':
 else:
     finalPath = ''
 
-
 experimentTypeDict = {
         'Supernatant (Sooraj)':1,
         'Supernatant+Fix/Perm (Madison)':2,
