@@ -175,13 +175,6 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             timepointIntervals.pop()
             numTimepoints -= 1
 
-        if tempTimepoints > 0:
-            fullMatrix = fullMatrix[:-1*tempTimepoints]
-        for i in range(tempTimepoints):
-            timepointList.pop()
-            timepointIntervals.pop()
-            numTimepoints -= 1
-
         name='matrix_'+experimentID+'.txt'
         np.savetxt(matrixPath+name,fullMatrix,fmt='%d',delimiter=',')
         #np.savetxt(name,fullMatrix,fmt='%d',delimiter=',')
