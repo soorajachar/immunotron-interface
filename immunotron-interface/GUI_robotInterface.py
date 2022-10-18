@@ -20,12 +20,6 @@ if platform.system() == 'Windows':
 else:
     finalPath = ''
 
-experimentTypeDict = {
-        'Supernatant (Sooraj)':1,
-        'Supernatant+Fix/Perm (Madison)':2,
-        'Reverse Plating (Anagha)':3,
-        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4
-        }
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
     def __init__(self):
@@ -365,7 +359,7 @@ class ExperimentHomePage(tk.Frame):
             allProgressBars.append(pb)
 
         def generateFullMatrix():
-            experimentIDsToIntegrate,experimentTypesToIntegrate,experimentsToIntegrate = [],[],[]
+            experimentIDsToIntegrate,experimentTypesToIntegrate,experimentsToIntegrate = [],[],[] # TODO: Change types to protocol dicts
             for i,l in enumerate(self.allExpInfoLabels):
                 expName = l[1]['text']
                 if expName != EMPTYTEXT:
@@ -380,7 +374,6 @@ class ExperimentHomePage(tk.Frame):
                 if len(experimentsToIntegrate) == 1:
                     _ = generateExperimentMatrix(singleExperiment=True,**self.allExperimentParameters[experimentsToIntegrate[0]])
                 else:
-                    numRows = 0
                     for exp in experimentsToIntegrate:
                         startTime = self.allExperimentParameters[exp]['fullStart']
                         trueStartTime = datetime.strptime(startTime,'%Y-%m-%d %a %I:%M %p')
@@ -390,10 +383,7 @@ class ExperimentHomePage(tk.Frame):
                         self.allExperimentParameters[exp]['daysAgo'] = trueDaysAgo
                         
                         tempNumRows = generateExperimentMatrix(singleExperiment=False,**self.allExperimentParameters[exp])
-                        numRows+=tempNumRows
-                    print(experimentIDsToIntegrate)
-                    print(experimentTypesToIntegrate)
-                    combineExperiments(experimentIDsToIntegrate,experimentTypesToIntegrate,numRows)
+                    combineExperiments(experimentIDsToIntegrate,experimentTypesToIntegrate) # TODO: Change to experiment protocols
                 messagebox.showinfo(title='Success',message='Experiment matrix generated!')
                 for exp in experimentsToIntegrate:
                     self.allExperimentParameters[exp]['addedToMatrix'] = True
@@ -428,6 +418,7 @@ class ExperimentInfoPage(tk.Frame):
         mainWindow.pack(side=tk.TOP,padx=10)
         
         #Disallow selection of cooling positions and incubator positions that are currently in use
+        # TODO: Remove (GUI calculates positions for researcher)
         allExpParameters = pickle.load(open('allExperimentParameters.pkl','rb'))
         reservedRacks,reservedCooling = [],[]
         for exp in allExpParameters:
@@ -473,6 +464,7 @@ class ExperimentInfoPage(tk.Frame):
         def enableFinish(event=None):
             #Also check for re-enabling "enter timepoints" button
             try:
+                # TODO: Remove incubator position??
                 allWidgetChecks = [experimentTypeVar.get(),incubatorPlatePosVar.get(),meridianVar.get(),minuteVar.get()]
                 checkButtonChecks = [x.get() for x in coolingPlatePosVarList]
                 allWidgetBools = [experimentNameEntry.get() != '']+[x != '  ' for x in allWidgetChecks]+[any(checkButtonChecks)]
@@ -496,7 +488,7 @@ class ExperimentInfoPage(tk.Frame):
         experimentNameEntry.bind("<Key>",enableFinish)
 
         startPos = 4
-        
+        # TODO: Replace with function to calculate incubator positions
         tk.Label(mainWindow,text='Incubator plate position:').grid(row=startPos,column=0,sticky=tk.W)
         incubatorPlatePosList = list(range(1,23)) 
         incubatorPlatePosVar = tk.IntVar()
@@ -520,7 +512,7 @@ class ExperimentInfoPage(tk.Frame):
             coolingPlatePosCB.grid(row=0,column=pos-1,sticky=tk.W)
             coolingPlatePosCBList.append(coolingPlatePosCB)
             coolingPlatePosVarList.append(coolingPlatePosVar)
-
+        # TODO: Remove incubator selection
         def disableIncubatorEntries():
             conditionNumber = conditionNumberVar.get()
             numPlates = math.ceil(conditionNumber/96)
@@ -546,9 +538,11 @@ class ExperimentInfoPage(tk.Frame):
         tk.Label(mainWindow,text='Number of conditions:').grid(row=2,column=0,sticky=tk.W)
         conditionNumberList =[16,24,32,48,56,64,72,80,88,96,128,192,256,288,384]
         conditionNumberVar = tk.IntVar()
+        # TODO: Remove incubator entry disabling
         conditionNumberDropdown = ttk.OptionMenu(mainWindow,conditionNumberVar,defaultValueDict['numConditions'],*conditionNumberList,command=lambda _: disableIncubatorEntries())
         conditionNumberDropdown.grid(row=2,column=1,sticky=tk.W)
-        
+
+        # TODO: Remove incubator entry disabling
         #Disable racks that are already occupied
         plateDisablingRadius = math.ceil(defaultValueDict['numConditions']/96)-1
         for reservedRack in reservedRacks:
@@ -602,10 +596,11 @@ class ExperimentInfoPage(tk.Frame):
         daysAgoEntry.insert(tk.END,str(defaultValueDict['daysAgo']))
         
         def collectInputs():
+            # TODO: Change inputs to match matrixGenerator
             experimentParameters = {}
             experimentParameters['experimentType'] = experimentTypeVar.get()
             experimentParameters['experimentID'] = experimentNameEntry.get()
-            experimentParameters['plateOffset'] = incubatorPlatePosVar.get()
+            experimentParameters['plateOffset'] = incubatorPlatePosVar.get() # TODO: Replace manual incubator entry with function
             experimentParameters['platePoseRestriction'] = [x+1 for x in range(4) if coolingPlatePosVarList[x].get()]
             experimentParameters['numConditions'] = conditionNumberVar.get()
             experimentParameters['blankColumns'] = [x+1 for x in range(12) if blankVarList[x].get()]

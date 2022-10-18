@@ -5,20 +5,17 @@ import datetime as dt
 import numpy as np
 import platform
 
-schedulePath = 'schedules/' 
-matrixPath = 'matrices/'
+def integrateExperiments(experimentIDs, experimentProtocols):
+    schedulePath = 'schedules/' 
+    matrixPath = 'matrices/'
 
-if platform.system() == 'Windows':
-    finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
-else:
-    finalPath = ''
+    if platform.system() == 'Windows':
+        finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+    else:
+        finalPath = ''
 
-def integrateExperiments(experimentIDs, experimentTypes):
-    print(experimentIDs)
-    print(experimentTypes)
     timeFormat = '%Y-%m-%d %a %I:%M %p'
-    #CHANGE THIS WHEN CHANGING PROTOCOL
-    timepointDuration = {1:14, 2:75, 3:60, 4:90}    
+    #CHANGE THIS WHEN CHANGING PROTOCOL 
     #Sort experiment start times:
     startTimeDict = {}
     for scheduleIndex,experimentName in enumerate(experimentIDs):
@@ -27,7 +24,6 @@ def integrateExperiments(experimentIDs, experimentTypes):
         timeObject = datetime.strptime(startTimeLine.split('Start Time: ')[1][:-1], timeFormat)
         startTimeDict[experimentName] = timeObject
     experimentIDs = sorted(startTimeDict, key=startTimeDict.get)
-    #print(experimentIDs)
 
     timeDict = {}
     timeDiffDict = {}
@@ -43,7 +39,7 @@ def integrateExperiments(experimentIDs, experimentTypes):
             if '>' in time:
                 parsedTime = parsedTime[parsedTime.rfind('>')+1:]
             timeObject = datetime.strptime(parsedTime, timeFormat)
-            timeKey = str(scheduleIndex)+'-'+str(timepointIndex)
+            timeKey = str(scheduleIndex)+'-'+str(timepointIndex) # EX: 0-5 (1st experiment, 6th timepoint)
             timeDict[timeKey] = timeObject
             timeStartList.append(int(parsedTimeIndex[1:-1]))
         timeDiffDict[scheduleIndex] = timeStartList[1] - timeStartList[0]
@@ -55,17 +51,14 @@ def integrateExperiments(experimentIDs, experimentTypes):
     sortedTimeKeys = []
     for time in uniqueSortedDateTimes:
         timeKey = [k for k,v in timeDict.items() if v == time]
-        timeKey.sort(key=lambda x: timepointDuration[experimentTypes[int(x.split('-')[0])]])
+        timeKey.sort(key=lambda x: experimentProtocols[int(x.split('-')[0])]['protocolLength'])
         sortedTimeKeys.append(timeKey[0])
         if len(timeKey) > 1:
-            prevExperimentType = experimentTypes[int(timeKey[0].split('-')[0])]
+            prevExperimentType = experimentProtocols[int(timeKey[0].split('-')[0])]
             for i in range(1, len(timeKey)):
-                timeDict[timeKey[i]] += timedelta(minutes=i*timepointDuration[prevExperimentType])
+                timeDict[timeKey[i]] += timedelta(minutes=i*prevExperimentType['protocolLength'])
                 sortedTimeKeys.append(timeKey[i])
-                prevExperimentType = experimentTypes[int(timeKey[i].split('-')[0])]
-
-    #timeKeys = list(timeDict.keys())
-    #sortedTimeKeys = [timeKeys[timeObjects.index(x)] for x in sortedDateTimes]
+                prevExperimentType = experimentProtocols[int(timeKey[i].split('-')[0])]
 
     timename = schedulePath+'masterSchedule.txt'
     startTimes = []
@@ -110,10 +103,10 @@ def integrateExperiments(experimentIDs, experimentTypes):
 
     #First time diff really doesn't matter
     firstTimeKey = sortedTimeKeys[0]
-    firstExperimentType = experimentTypes[int(sortedTimeKeys[0].split('-')[0])]
+    firstExperimentType = experimentProtocols[int(sortedTimeKeys[0].split('-')[0])]
     initialTimeDiff = timeDict[sortedTimeKeys[0]] - startTimes[0] 
     minutes = int(initialTimeDiff.total_seconds() / 60)
-    timeDiffs = [minutes-timepointDuration[firstExperimentType]*(timeDiffDict[0]-1)]
+    timeDiffs = [minutes-firstExperimentType['protocolLength']*(timeDiffDict[0]-1)]
 
     for row in range(1,len(sortedTimeKeys)):
         currentTimeKey = sortedTimeKeys[row]
@@ -123,21 +116,21 @@ def integrateExperiments(experimentIDs, experimentTypes):
         currentTimepointIndex = int(currentTimeKey.split('-')[1])
         prevScheduleIndex = int(prevTimeKey.split('-')[0])
         prevTimepointIndex = int(prevTimeKey.split('-')[1])
-        currentExperimentType = experimentTypes[currentScheduleIndex]
-        prevExperimentType = experimentTypes[prevScheduleIndex]
+        currentExperimentType = experimentProtocols[currentScheduleIndex]
+        prevExperimentType = experimentProtocols[prevScheduleIndex]
 
         timeObject1 = timeDict[prevTimeKey]    
         timeObject2 = timeDict[currentTimeKey] 
         timeDiff = timeObject2 - timeObject1
         minutes = int(timeDiff.total_seconds() / 60)
         scheduleRowsPerTimepoint = timeDiffDict[prevScheduleIndex]
-        timeDiffs+=[timepointDuration[prevExperimentType]]*(scheduleRowsPerTimepoint-1)
-        minutes-=timepointDuration[prevExperimentType]*(scheduleRowsPerTimepoint-1)
+        timeDiffs+=[prevExperimentType['protocolLength']]*(scheduleRowsPerTimepoint-1)
+        minutes-=prevExperimentType['protocolLength']*(scheduleRowsPerTimepoint-1)
         timeDiffs+=[minutes]
 
     #Add in subtimepoints for last timepoint, if needed
     scheduleRowsPerTimepoint = timeDiffDict[currentScheduleIndex]
-    timeDiffs+=[timepointDuration[currentExperimentType]]*(scheduleRowsPerTimepoint-1)
+    timeDiffs+=[prevExperimentType['protocolLength']]*(scheduleRowsPerTimepoint-1)
 
     matrixAssemblyList = []
     for timeKey in sortedTimeKeys:
@@ -151,7 +144,7 @@ def integrateExperiments(experimentIDs, experimentTypes):
             matrixAssemblyList.append(lineToAdd)
 
     fullMatrix = np.vstack(matrixAssemblyList)
-    fullMatrix[:,-2] = timeDiffs
+    fullMatrix[:,50] = timeDiffs
     
     name = 'Full_Matrix_OnlySup.txt'
     np.savetxt(finalPath+name,fullMatrix,fmt='%d',delimiter=',')
