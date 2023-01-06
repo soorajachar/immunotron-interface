@@ -24,7 +24,8 @@ experimentTypeDict = {
         'Supernatant (Sooraj)':1,
         'Supernatant+Fix/Perm (Madison)':2,
         'Reverse Plating (Anagha)':3,
-        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4
+        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4,
+        'Supernatant+Fix/Perm+SupTransfer (Madison)':5
         }
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):

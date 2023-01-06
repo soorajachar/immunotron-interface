@@ -15,7 +15,8 @@ experimentTypeDict = {
         'Supernatant (Sooraj)':1,
         'Supernatant+Fix/Perm (Madison)':2,
         'Reverse Plating (Anagha)':3,
-        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4
+        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4,
+        'Supernatant+Fix/Perm+SupTransfer (Madison)':5
         }
 schedulePath = 'schedules/' 
 matrixPath = 'matrices/'
@@ -40,7 +41,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     startTime = kwargs['startTime'] # time of experiment start
     experimentType = experimentTypeDict[kwargs['experimentType']] # which robot protocol to use
     # START: Could this just be replaced with 1) how many plates are used and 2) blank columns from GUI?
-    if experimentType in [1,2,4]:
+    if experimentType in [1,2,4,5]:
         # Make sure explicit zero timepoint does not cause issues
         timepointList = [0.0]+[x if x != 0 else 0.1 for x in kwargs['timepointlist']] # make a list of all timepoints in experiment + 0.0
         daysAgo = kwargs['daysAgo'] # if experiment has already started (how many days ago)
@@ -56,7 +57,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         if experimentType == 1:
             numCulturePlatesForExperiment = math.ceil(numConditions / numConditionsPerCulturePlate)
             numCultureColumnsPerPlate = math.ceil(numConditions / culturePlateWidth / numCulturePlatesForExperiment)
-        elif experimentType in [2,4]:
+        elif experimentType in [2,4,5]:
             numCulturePlatesForExperiment = numTimepoints
             numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
         # END
@@ -85,7 +86,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             numTimepoints *= numCulturePlatesForExperiment
             plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
         # For 1-plate-per-timepoint experiments, generate list of incubator positions (must be consecutive!)
-        elif experimentType in [2,4]:
+        elif experimentType in [2,4,5]:
             plateArray = np.array(range(1+plateOffset,numTimepoints+1+plateOffset))
 
         # Culture columns to aspirate (should be the same in 384 format)
@@ -147,7 +148,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
                     actualTimepoint+=1
                 else: # If there is another plate, add a placeholder wait time based on time it takes to run script per plate
                     waitTimeArray[timepoint,0] = timeoffset
-            elif experimentType in [2,4]:
+            elif experimentType in [2,4,5]:
                 waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60)
                 actualTimepoint+=1
         

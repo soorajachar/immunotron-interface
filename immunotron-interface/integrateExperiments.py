@@ -18,7 +18,7 @@ def integrateExperiments(experimentIDs, experimentTypes):
     print(experimentTypes)
     timeFormat = '%Y-%m-%d %a %I:%M %p'
     #CHANGE THIS WHEN CHANGING PROTOCOL
-    timepointDuration = {1:14, 2:75, 3:60, 4:90}    
+    timepointDuration = {1:14, 2:75, 3:60, 4:90, 5:85}    
     #Sort experiment start times:
     startTimeDict = {}
     for scheduleIndex,experimentName in enumerate(experimentIDs):
