@@ -56,7 +56,7 @@ def calculateIncubatorPositions(incubator, experimentProtocol, numPlates, numTim
         assert(len(incubatorPositions) == positionsNeeded)
     return incubatorPositions
 
-def calculateFridgePositions(fridge, experimentProtocol, numPlates, numTimepoints):
+def calculateFridgePositions(fridge, experimentProtocol, numPlates, blankColumns, numTimepoints):
     '''
     Determines how many fridge positions are required for an experiment and which positions should be used based on the fridge's current status.
     NOTE: DOES NOT fill these fridge positions!! Must separately call loadPlates() to officially reserve these positions.
@@ -69,9 +69,14 @@ def calculateFridgePositions(fridge, experimentProtocol, numPlates, numTimepoint
     Returns:
         List of fridge positions to associate with this experiment (List of ints)
     '''
-    positionsNeeded = numPlates
+    positionsNeeded = 0
     if experimentProtocol['transferToCollection']:
-        positionsNeeded = math.ceil((numTimepoints*numPlates)/(culturePlateLength*4))
+        numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
+        numCultureColumnsPerTimepoint = numPlates * numCultureColumnsPerPlate
+        numCollectionPlates = math.ceil((numTimepoints*numCultureColumnsPerTimepoint)/(culturePlateLength*4)) # 4 possible positions on 384-well plate per column on 96-well plate
+        positionsNeeded += numCollectionPlates
+    if experimentProtocol['refrigerateCulturePlate']:
+        positionsNeeded += numTimepoints*numPlates
     
     # To prioritize putting plates in the incubator in a continuous block of positions for an experiment, find all blocks of free positions
     continuousFreeBlocks = {}

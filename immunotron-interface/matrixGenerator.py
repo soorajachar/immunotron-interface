@@ -11,8 +11,8 @@ culturePlateLength = 12
 culturePlateWidth = 8
 
 def generateExperimentMatrix(singleExperiment=True,**kwargs):
-    schedulePath = 'schedules/' 
-    matrixPath = 'matrices/'
+    schedulePath = '/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/schedules/' 
+    matrixPath = '/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/matrices/'
     if platform.system() == 'Windows':
         finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
     else:
@@ -29,6 +29,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     daysAgo = kwargs['daysAgo'] # if experiment has already started (how many days ago)
     robotProtocol = protocol['protocolID'] # which robot protocol to use (int)
     samePlatesAcrossExperiment = protocol['samePlatesAcrossExperiment'] # if the same cultures are pulled out/replaced w/ incubator (bool)
+    refrigerateCulturePlate = protocol['refrigerateCulturePlate'] # if the culture plate used per timepoint in the experiment is saved in the fridge rather than the incubator (bool) ** samePlatesAcrossExperiment MUST be False
     transferToCollection = protocol['transferToCollection'] # if samples are to be transferred to a 384-well plate for storage in fridge (bool)
     timeoffset = protocol['protocolLength'] # estimated amount of time (minutes) the protocol takes to run for a single culture plate (int)
 
@@ -93,14 +94,17 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
                 timepointWellPoseArray[i] = ((completeColumnCounter - 1) - ((culturePlateLength*4) * (timepointCollectionPlateArray[i] - 1))) / 12 # 4 positions = 0,1,2,3. After removing cols for previous plates, divide by culturePlateLength to determine which position to use
         collectionColumnArray.append(timepointPlateArray)
         wellPoseArray.append(timepointWellPoseArray)
+        uniqueCollectionPlates = []
         if transferToCollection:
             # Decide which collection plates are needed for timepoint (up to 2 plates can be used)
             uniqueCollectionPlates = np.unique(timepointCollectionPlateArray)
             uniqueCollectionPlates = uniqueCollectionPlates[uniqueCollectionPlates != 0]
             timepointCollectionPlateArray = [1 if x == uniqueCollectionPlates[0] else x if x == 0 else 2 for x in timepointCollectionPlateArray] # Convert collection plate needed for col to position of plate (1 or 2, or 0 if col is not pipetted)
             uniqueCollectionPlates = [fridgePlateArray[x - 1] for x in uniqueCollectionPlates] # Convert collection plate number to fridge position
-        else:
-            uniqueCollectionPlates = [fridgePlateArray[j]] # Each timepoint will have its own fridge position
+        if refrigerateCulturePlate: 
+            uniqueCollectionPlates.append(fridgePlateArray[j + numCollectionPlates]) # The first fridge position saved for culture plates will be AFTER any collection plates
+        if len(uniqueCollectionPlates) == 0:
+            uniqueCollectionPlates.append(0) # If the fridge is not used, append a 0 placeholder
         
         if len(uniqueCollectionPlates) == 2: # If a timepoint needs to be split across 2 timepoints, 2 lids will need to be removed after being pulled from the fridge
             collectionLidArray[j] = 12
