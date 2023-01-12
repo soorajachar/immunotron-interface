@@ -26,12 +26,6 @@ else:
     finalPath = ''
 
 def generateExperimentMatrix(singleExperiment=True,**kwargs):
-    schedulePath = 'schedules/' 
-    matrixPath = 'matrices/'
-    if platform.system() == 'Windows':
-        finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
-    else:
-        finalPath = ''
     experimentID = kwargs['experimentID'] # experiment name
     plateOffset = kwargs['plateOffset']-1 # incubator plate position??
     platePoseRestriction = kwargs['platePoseRestriction'] # cooling plate position
