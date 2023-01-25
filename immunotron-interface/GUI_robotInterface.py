@@ -546,7 +546,7 @@ class ExperimentInfoPage(tk.Frame):
                 timepointNumberDropdown['menu'].entryconfigure(invalidTimepoint-1, state = "disabled")
 
         tk.Label(mainWindow,text='Number of conditions:').grid(row=2,column=0,sticky=tk.W)
-        conditionNumberList =[16,24,32,48,56,64,72,80,88,96,128,192,256,288,384]
+        conditionNumberList =[8,16,24,32,48,56,64,72,80,88,96,128,192,256,288,384]
         conditionNumberVar = tk.IntVar()
         conditionNumberDropdown = ttk.OptionMenu(mainWindow,conditionNumberVar,defaultValueDict['numConditions'],*conditionNumberList,command=lambda _: disableIncubatorEntries())
         conditionNumberDropdown.grid(row=2,column=1,sticky=tk.W)
