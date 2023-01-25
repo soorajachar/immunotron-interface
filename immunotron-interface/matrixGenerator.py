@@ -49,10 +49,10 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             else:
                 numConditionsPerCulturePlate = 96 
         # Determine how many plates needed for number of conditions and how many columns are used on each plate
-        if experimentType == 1:
+        if experimentType in [1,6]:
             numCulturePlatesForExperiment = math.ceil(numConditions / numConditionsPerCulturePlate)
             numCultureColumnsPerPlate = math.ceil(numConditions / culturePlateWidth / numCulturePlatesForExperiment)
-        elif experimentType in [2,4,5,6]:
+        elif experimentType in [2,4,5]:
             numCulturePlatesForExperiment = numTimepoints
             numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
         # END
@@ -79,7 +79,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         # For a supernatant experiment (same plate(s) throughout), add a "timepoint" for each plate in the experiment (ex. 2 lines for 2 plates) and make list of incubator positions
         if experimentType in [1,6]:
             numTimepoints *= numCulturePlatesForExperiment
-            plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
+            plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numTimepoints)
         # For 1-plate-per-timepoint experiments, generate list of incubator positions (must be consecutive!)
         elif experimentType in [2,4,5]:
             plateArray = np.array(range(1+plateOffset,numTimepoints+1+plateOffset))
@@ -137,13 +137,13 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             supernatantPlateArray[timepoint,:numConditionColumns] = plateArrays[timepoint] # Which position collection plate to load column into
             supernatantLidArray[timepoint,0] = int(''.join(list(map(str,list(map(int,list(np.unique(plateArrays[timepoint])))))))) # Which position collection plate to load column into
             wellPoseArray[timepoint,:numConditionColumns] = wellPoseArrays[timepoint] # Which 384-well position to load into
-            if experimentType == 1: # If this is the last plate for this timepoint, add wait time until next
+            if experimentType in [1,6]: # If this is the last plate for this timepoint, add wait time until next
                 if timepoint % numCulturePlatesForExperiment == 0:
                     waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60-timeoffset*(numCulturePlatesForExperiment-1))
                     actualTimepoint+=1
                 else: # If there is another plate, add a placeholder wait time based on time it takes to run script per plate
                     waitTimeArray[timepoint,0] = timeoffset
-            elif experimentType in [2,4,5,6]:
+            elif experimentType in [2,4,5]:
                 waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60)
                 actualTimepoint+=1
         
