@@ -41,7 +41,7 @@ def calculateIncubatorPositions(incubator, experimentProtocol, numPlates, numTim
     # Check to ensure enough spots are available to load the experiment in the incubator
     if totalFree < positionsNeeded:
         print('Not enough positions available for this experiment in the incubator - please unload another experiment first.')
-        exit(1)
+        return False
     # If possible, assign a continuous block of positions for the experiment that fits the experiment as tightly as possible
     possibleContinuousBlocks = [k for k,v in continuousFreeBlocks.items() if v >= positionsNeeded]
     incubatorPositions = []
@@ -98,7 +98,7 @@ def calculateFridgePositions(fridge, experimentProtocol, numPlates, blankColumns
     # Check to ensure enough spots are available to load the experiment in the fridge
     if totalFree < positionsNeeded:
         print('Not enough positions available for this experiment in the fridge - please unload another experiment first.')
-        exit(1)
+        return False
     # If possible, assign a continuous block of positions for the experiment that fits the experiment as tightly as possible
     possibleContinuousBlocks = [k for k,v in continuousFreeBlocks.items() if v >= positionsNeeded]
     fridgePositions = []
