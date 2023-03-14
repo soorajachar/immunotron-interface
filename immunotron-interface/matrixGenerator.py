@@ -127,6 +127,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
         supernatantLidArray = np.zeros([numTimepoints,1])
         waitTimeArray = np.zeros([numTimepoints,1])
+        actualTimepointArray = np.zeros([numTimepoints,1])
 
         timeoffset = 10 
 
@@ -141,17 +142,20 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
                 if timepoint % numCulturePlatesForExperiment == 0:
                     waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60-timeoffset*(numCulturePlatesForExperiment-1))
                     actualTimepoint+=1
+                    actualTimepointArray[timepoint,0] = actualTimepoint
                 else: # If there is another plate, add a placeholder wait time based on time it takes to run script per plate
                     waitTimeArray[timepoint,0] = timeoffset
+                    actualTimepointArray[timepoint,0] = actualTimepoint
             elif experimentType in [2,4,5]:
                 waitTimeArray[timepoint,0] = int(timepointIntervals[actualTimepoint]*60)
+                actualTimepointArray[timepoint,0] = actualTimepoint+1
                 actualTimepoint+=1
         
         experimentArray = np.full((plateArray.shape[0],1), experimentType) # make list of robot script to use
 
         plateArray = np.reshape(plateArray,(plateArray.shape[0],1)) # reshape to be able to stack
 
-        fullMatrix = np.hstack([plateArray,supernatantLidArray,cultureColumnArray,supernatantPlateArray,supernatantColumnArray,wellPoseArray,waitTimeArray, experimentArray]) # combine all pieces of matrix
+        fullMatrix = np.hstack([plateArray,supernatantLidArray,cultureColumnArray,supernatantPlateArray,supernatantColumnArray,wellPoseArray,waitTimeArray, experimentArray, actualTimepointArray]) # combine all pieces of matrix
         '''
         COLUMNS (1-indexed for Evoware):
         1: Incubator position
@@ -162,6 +166,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
         39-50: Well positions to load
         51: Wait time before next timepoint/row
         52: Robot protocol
+        53: Timepoint number for this protocol
         '''
         # Remove padding timepoints
         if tempTimepoints > 0:

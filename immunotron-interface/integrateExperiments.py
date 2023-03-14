@@ -151,7 +151,7 @@ def integrateExperiments(experimentIDs, experimentTypes):
             matrixAssemblyList.append(lineToAdd)
 
     fullMatrix = np.vstack(matrixAssemblyList)
-    fullMatrix[:,-2] = timeDiffs
+    fullMatrix[:,50] = timeDiffs
     
     name = 'Full_Matrix_OnlySup.txt'
     np.savetxt(finalPath+name,fullMatrix,fmt='%d',delimiter=',')
