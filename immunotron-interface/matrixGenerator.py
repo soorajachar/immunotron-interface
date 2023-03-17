@@ -11,8 +11,8 @@ culturePlateLength = 12
 culturePlateWidth = 8
 
 def generateExperimentMatrix(singleExperiment=True,**kwargs):
-    schedulePath = '/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/schedules/' 
-    matrixPath = '/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/matrices/'
+    schedulePath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/schedules/' 
+    matrixPath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/matrices/'
     if platform.system() == 'Windows':
         finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
     else:

@@ -6,13 +6,13 @@ import numpy as np
 import platform
 
 def integrateExperiments(experimentIDs, experimentProtocols):
-    schedulePath = '/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/schedules/' 
-    matrixPath = '/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/matrices/'
+    schedulePath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/schedules/' 
+    matrixPath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/matrices/'
 
     if platform.system() == 'Windows':
         finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
     else:
-        finalPath = '/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/'
+        finalPath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/'
 
     timeFormat = '%Y-%m-%d %a %I:%M %p'
     #CHANGE THIS WHEN CHANGING PROTOCOL 

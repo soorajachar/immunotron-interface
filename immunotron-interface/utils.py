@@ -64,6 +64,7 @@ def calculateFridgePositions(fridge, experimentProtocol, numPlates, blankColumns
         fridge: Current filled positions in fridge (dict)
         experimentProtocol: Protocol the experiment will run extracted from experimentProtocols (dict)
         numPlates: How many culture plates are taken out of the incubator at each timepoint (int)
+        blankColumns: Blank columns on plate (list)
         numTimepoints: Number of timepoints in the experiment (int)
 
     Returns:
