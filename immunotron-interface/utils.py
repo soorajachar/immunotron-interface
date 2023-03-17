@@ -4,12 +4,12 @@ import math
 culturePlateLength = 12
 culturePlateWidth = 8
 
-def calculateIncubatorPositions(incubator, experimentProtocol, numPlates, numTimepoints):
+def calculateIncubatorPositions(incubatorPath, experimentProtocol, numPlates, numTimepoints):
     '''
     Determines how many incubator positions are required for an experiment and which positions should be used based on the incubator's current status.
-    NOTE: DOES NOT fill these incubator positions!! Must separately call loadPlates() to fill the incubator.
+    NOTE: Must separately load the plates via Evoware to fill the incubator.
     Args:
-        incubator: Current filled positions in incubator (dict)
+        fridgePath: Path to matrix containing currently used positions for experiments (string)
         experimentProtocol: Protocol the experiment will run extracted from experimentProtocols (dict)
         numPlates: How many culture plates are taken out of the incubator at each timepoint (int)
         numTimepoints: Number of timepoints in the experiment (int)
@@ -17,6 +17,9 @@ def calculateIncubatorPositions(incubator, experimentProtocol, numPlates, numTim
     Returns:
         List of incubator positions to associate with this experiment (List of ints)
     '''
+    
+    incubator = checkContainerStatus(incubatorPath)
+    
     positionsNeeded = numPlates
     if not experimentProtocol['samePlatesAcrossExperiment']:
         positionsNeeded *= numTimepoints
@@ -56,12 +59,12 @@ def calculateIncubatorPositions(incubator, experimentProtocol, numPlates, numTim
         assert(len(incubatorPositions) == positionsNeeded)
     return incubatorPositions
 
-def calculateFridgePositions(fridge, experimentProtocol, numPlates, blankColumns, numTimepoints):
+def calculateFridgePositions(fridgePath, experimentProtocol, numPlates, blankColumns, numTimepoints):
     '''
     Determines how many fridge positions are required for an experiment and which positions should be used based on the fridge's current status.
-    NOTE: DOES NOT fill these fridge positions!! Must separately call loadPlates() to officially reserve these positions.
+    NOTE: Must separately load the plates via Evoware to fill the incubator.
     Args:
-        fridge: Current filled positions in fridge (dict)
+        fridgePath: Path to matrix containing currently used positions for experiments (string)
         experimentProtocol: Protocol the experiment will run extracted from experimentProtocols (dict)
         numPlates: How many culture plates are taken out of the incubator at each timepoint (int)
         numTimepoints: Number of timepoints in the experiment (int)
@@ -69,6 +72,9 @@ def calculateFridgePositions(fridge, experimentProtocol, numPlates, blankColumns
     Returns:
         List of fridge positions to associate with this experiment (List of ints)
     '''
+    
+    fridge = checkContainerStatus(fridgePath)
+    
     positionsNeeded = 0
     if experimentProtocol['transferToCollection']:
         numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
@@ -113,35 +119,38 @@ def calculateFridgePositions(fridge, experimentProtocol, numPlates, blankColumns
         assert(len(fridgePositions) == positionsNeeded)
     return fridgePositions
 
-def loadPlates(container, experimentID, positions):
+def checkContainerStatus(path):
     '''
-    Changes status of positions in the incubator or fridge to be filled with plates from an experiment
+    Determines how many positions are in the container (incubator or fridge) and creates a dictionary to determine which positions are filled.
     Args:
-        container: Current filled positions in incubator or fridge (dict)
-        experimentID: Name of experiment to be loaded (str)
-        positions: Which incubator positions to fill with this experiment (List of ints)
+        path: Path to matrix containing currently used positions for experiments (string)
 
     Returns:
-        True if plates loaded successfully, else returns False + prints which position is filled with another experiment
+        Dictionary of all positions and whether they are full (Dict)
     '''
-    for pos in positions:
-        if container[pos] is not None:
-            print('Container position {} is not available - please unload experiment {} first.'.format(pos, container[pos]))
-            return False
-        container[pos] = experimentID
-    return True
+    status = np.loadtxt(path, delimiter=',')
+    positions = list(range(1,status.shape[1]+1))
+    statuses = [None]*len(positions)
+    container = dict(zip(positions, statuses))
+    for pos in np.unique(status):
+        if pos != 0:
+            container[pos] = 'Occupied'
+    return container
 
-def unloadPlates(container, experimentID):
+def editContainerStatus(path, experimentSlot, positions):
     '''
-    Changes status of positions in the incubator or fridge to be empty
+    Writes to incubator or fridge status file at the specified path when positions are assigned to an experiment
     Args:
-        container: Current filled positions in incubator or fridge (dict)
-        experimentID: Name of experiment to be unloaded (str)
+        path: Path to matrix containing currently used positions for experiments (string)
+        experimentSlot: Which experiment slot on the GUI is being edited (1-indexed) (int)
+        positions: List of positions to use for this experiment (List of ints)
 
     Returns:
-        Positions emptied (list of ints)
+        None
     '''
-    positions = [k for k,v in container.items() if v == experimentID]
-    for pos in positions:
-        container[pos] = None
-    return positions
+    
+    container = np.loadtxt(path, delimiter=',')
+    numPositions = container.shape[1]
+    container[experimentSlot-1, 0:numPositions] = positions
+    container[experimentSlot-1, numPositions:] = 0
+    np.savetxt(path, container, delimiter=',')
