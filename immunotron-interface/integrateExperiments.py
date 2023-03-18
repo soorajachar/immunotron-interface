@@ -6,13 +6,13 @@ import numpy as np
 import platform
 
 def integrateExperiments(experimentIDs, experimentProtocols):
-    schedulePath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/schedules/' 
-    matrixPath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/matrices/'
-
+    schedulePath = 'schedules/' 
+    matrixPath = 'matrices/'
+    finalInputPath = 'misc/'
     if platform.system() == 'Windows':
-        finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+        finalOutputPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
     else:
-        finalPath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/'
+        finalOutputPath = 'variables/'
 
     timeFormat = '%Y-%m-%d %a %I:%M %p'
     #CHANGE THIS WHEN CHANGING PROTOCOL 
@@ -80,7 +80,7 @@ def integrateExperiments(experimentIDs, experimentProtocols):
             timepointLineString = '('+str(timepointLine)+')'
             timepointLine+=timeDiffDict[scheduleIndex]
             print(currentTimeObject.strftime('Timepoint '+str(timepointIndex+1)+'-'+experimentIDs[scheduleIndex]+': %Y-%m-%d %a %I:%M %p'+' '+timepointLineString),file=output,sep="\r\n")
-    timename = 'masterSchedule.txt'
+    timename = finalInputPath+'masterSchedule.txt'
     startTimes = []
     with open(timename,'w') as output:
         print('USE TIMEPOINTS IN PARENTHESES TO SET TIMEPOINT ON ROBOT',file=output,sep="\r\n")
@@ -147,4 +147,4 @@ def integrateExperiments(experimentIDs, experimentProtocols):
     fullMatrix[:,50] = timeDiffs
     
     name = 'Full_Matrix_OnlySup.txt'
-    np.savetxt(finalPath+name,fullMatrix,fmt='%d',delimiter=',')
+    np.savetxt(finalOutputPath+name,fullMatrix,fmt='%d',delimiter=',')

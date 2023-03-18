@@ -6,26 +6,29 @@ import tkinter as tk
 import pandas as pd
 import numpy as np
 from functools import partial
-#from PIL import Image,ImageTk
 from tkinter import messagebox
 from matrixGenerator import generateExperimentMatrix,combineExperiments
+from utils import calculateIncubatorPositions,calculateFridgePositions,checkContainerStatus,editContainerStatus
 import tkinter.ttk as ttk
 import platform
 from string import ascii_uppercase
 
 schedulePath = 'schedules/' 
 matrixPath = 'matrices/'
+finalInputPath = 'misc/'
 if platform.system() == 'Windows':
-    finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+    finalOutputPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
 else:
-    finalPath = ''
+    finalOutputPath = 'variables/'
+
+incubatorPath = finalOutputPath+'incubatorStatus.txt'
+fridgePath = finalOutputPath+'fridgeStatus.txt'
 
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
     def __init__(self):
         self.root = tk.Tk.__init__(self)
 
-        #self.title('plateypus '+version('plateypus'))
         self._frame = None
         #TEMPORARY; REMOVE WHEN UPLOADED TO PYPI
         self.homedirectory = os.getcwd()
@@ -49,24 +52,28 @@ class ExperimentHomePage(tk.Frame):
         mainWindow = tk.Frame(self)
         mainWindow.pack(side=tk.TOP,padx=10)
         
- 
         EMPTYTEXT = '-'
-        NUMEXP = 4
-        allLabels = ['Experiment:','Type (Author):','Name:','Incubator rack:','Cooling plate:','# conditions:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Change cooling plate:','Added to matrix:']
+        NUMEXP = 8
+        allLabels = ['Experiment:','Type (Author):','Name:','Incubator racks:','Fridge racks:','# plates:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Incubator Loaded?','Fridge Loaded?','Added to matrix:']
         
-        if 'allExperimentParameters.pkl' not in os.listdir():
+        #Load experiment parameters (experiments currently running on robot)
+        if 'experimentParameters.pkl' not in os.listdir(finalInputPath):
             self.allExperimentParameters = {k:{} for k in range(NUMEXP)}
-            with open('allExperimentParameters.pkl','wb') as f:
+            with open(finalInputPath+'experimentParameters.pkl','wb') as f:
                 pickle.dump(self.allExperimentParameters,f)
         else:
-            self.allExperimentParameters = pickle.load(open('allExperimentParameters.pkl','rb'))
-            #Temporary backwards compatibility
-            if 'experimentType' not in list(self.allExperimentParameters.keys()):
-                for eID in self.allExperimentParameters:
-                    if len(self.allExperimentParameters[eID].keys()) != 0:
-                        newDict = {**{'experimentType':list(experimentTypeDict.keys())[0]},**self.allExperimentParameters[eID]}
-                        self.allExperimentParameters[eID] = newDict
-        
+            self.allExperimentParameters = pickle.load(open(finalInputPath+'experimentParameters.pkl','rb'))
+        #Load all saved experiment protocols
+        if 'experimentProtocols.pkl' not in os.listdir(finalInputPath):
+            self.experimentProtocols = {}
+            with open(finalInputPath+'experimentProtocols.pkl','wb') as f:
+                pickle.dump(self.experimentProtocols,f)
+        else:
+            self.experimentProtocols = pickle.load(open(finalInputPath+'experimentProtocols.pkl','rb'))
+            allProtocols = list(self.experimentProtocols.keys())
+            allIDs = [self.experimentProtocols[x]['protocolID'] for x in allProtocols]
+            IDdict = {x:y for x,y in zip(allIDs,allProtocols)}
+
         expFrame = tk.Frame(self,borderwidth=0.8,relief=tk.SOLID)
         expFrame.pack()
         labelFrame = tk.Frame(expFrame)
@@ -74,13 +81,17 @@ class ExperimentHomePage(tk.Frame):
         
         def updateExperimentLabels():
             maxPlateChangeLen = 0
-            finalPlateChangeDict = {}
             validExps = []
             for exp in range(NUMEXP):
                 if len(self.allExperimentParameters[exp]) != 0:
                     validExps.append(exp)
-                    for i,expParameter in enumerate(list(self.allExperimentParameters[exp].keys())[:-3]):
-                        rawValue = self.allExperimentParameters[exp][expParameter]
+                    for i,expParameter in enumerate(['protocolParameters','experimentID','incubatorPositions','fridgePositions','numPlates','blankColumns','numTimepoints','startTime','timepointlist','addedToMatrix','incubatorStatus','fridgeStatus','addedToMatrix']):
+                        if expParameter == 'protocolParameters':
+                            rawValue = IDdict[self.allExperimentParameters[exp][expParameter]['protocolID']]
+                        elif expParameter in ['incubatorStatus','fridgeStatus']:
+                            rawValue = ''
+                        else:
+                            rawValue = self.allExperimentParameters[exp][expParameter]
                         if isinstance(rawValue,list):
                             if len(rawValue) == 0:
                                 parsedValue = EMPTYTEXT
@@ -95,17 +106,14 @@ class ExperimentHomePage(tk.Frame):
                             if str(rawValue) == '':
                                 parsedValue = EMPTYTEXT
                             else:
-                                if expParameter == 'plateOffset':
-                                    numPlates = int(math.ceil(self.allExperimentParameters[exp]['numConditions']/96))
-                                    parsedValue = ', '.join([str(x) for x in range(rawValue,rawValue+numPlates)])
-                                elif expParameter == 'startTime':
+                                if expParameter == 'startTime':
                                     parsedValue = self.allExperimentParameters[exp]['fullStart']
                                 else:
                                     parsedValue = str(rawValue)
                         self.allExpInfoLabels[exp][i].configure(text=parsedValue,fg='black')
                     
                     endTime = datetime.strptime(self.allExperimentParameters[exp]['fullStart'],'%Y-%m-%d %a %I:%M %p')+dt.timedelta(hours=self.allExperimentParameters[exp]['timepointlist'][-1])
-                    self.allExpInfoLabels[exp][-3].configure(text=endTime.strftime('%Y-%m-%d %a %I:%M %p'))
+                    self.allExpInfoLabels[exp][-4].configure(text=endTime.strftime('%Y-%m-%d %a %I:%M %p'))
                     numPassedTimepoints = 0
                     start = datetime.strptime(self.allExperimentParameters[exp]['fullStart'],'%Y-%m-%d %a %I:%M %p')
                     for timepoint in self.allExperimentParameters[exp]['timepointlist']:
@@ -120,80 +128,29 @@ class ExperimentHomePage(tk.Frame):
                         progressString = str(percentage) + '% ('+str(numPassedTimepoints)+'/'+str(numTimepoints)+')'
                     style.configure('text.Horizontal.TProgressbar'+str(exp+1), text=progressString)
                     plateSize = 384
-                    numConditions = self.allExperimentParameters[exp]['numConditions']
-                    timepointsPerPlate = int(plateSize/numConditions)
-                    platesRequired = int(numTimepoints/timepointsPerPlate)
-                    platePoses = self.allExperimentParameters[exp]['platePoseRestriction']
-                    plateChangeDict,plateChangeDict2 = {},{}
-                    j = 1
-                    for i in range(platesRequired):
-                        plateChange = i%len(platePoses)
-                        if plateChange not in plateChangeDict:
-                            plateChangeDict2[plateChange] = []
-                            plateChangeDict[plateChange] = []
-                        else:
-                            #Plate change dict 2 tracks the completion of a plate; this does not depend on the number of plate positions; only on the number of timepoints/plate
-                            plateChangeDict2[plateChange]+=[j*timepointsPerPlate-1]
-                            j+=1
-                            plateChangeDict[plateChange]+=[i*timepointsPerPlate]
-                    truePlateChangeDict = {}
-                    truePlateChangeDict2 = {}
-                    maxLen = 0
-                    for i in plateChangeDict:
-                        if len(plateChangeDict[i]) > 0:
-                            plateChangeDeadlines,plateChangeDeadlines2 = [],[]
-                            for x in plateChangeDict[i]:
-                                plateChangeDeadline = start+dt.timedelta(hours=self.allExperimentParameters[exp]['timepointlist'][x])
-                                plateChangeDeadlines.append(plateChangeDeadline.strftime('%Y-%m-%d %a %I:%M %p'))
-                            for x in plateChangeDict2[i]:
-                                plateChangeDeadline2 = start+dt.timedelta(hours=self.allExperimentParameters[exp]['timepointlist'][x])
-                                plateChangeDeadlines2.append(plateChangeDeadline2.strftime('%Y-%m-%d %a %I:%M %p'))
-                            if len(plateChangeDeadlines) > maxLen:
-                                maxLen = len(plateChangeDeadlines)
-                            truePlateChangeDict[platePoses[i]] = plateChangeDeadlines
-                            truePlateChangeDict2[platePoses[i]] = plateChangeDeadlines2
-                    finalPlateChangeStrings = []
-                    for j in range(maxLen):
-                        for i in truePlateChangeDict:
-                            if j < len(truePlateChangeDict[i]):
-                                #Remove any plate change deadlines that have passed
-                                if datetime.now() < datetime.strptime(truePlateChangeDict[i][j],'%Y-%m-%d %a %I:%M %p'):
-                                    finalPlateChangeStrings.append('['+str(i)+'] between '+truePlateChangeDict2[i][j]+'\n                     '+truePlateChangeDict[i][j])
-                    if len(finalPlateChangeStrings) > maxPlateChangeLen:
-                        maxPlateChangeLen = len(finalPlateChangeStrings)
-                    if len(finalPlateChangeStrings) > 0:
-                        finalPlateChangeDict[exp] = finalPlateChangeStrings
                     #Update added to matrix warnings check if all labels are either yes or - in both removeExp and generate matrix
                     if self.allExperimentParameters[exp]['addedToMatrix']:
                         self.allExpInfoLabels[exp][-1].configure(text='Yes',fg='green')
                     else:
-                        self.allExpInfoLabels[exp][-1].configure(text='No',fg='red')
+                        self.allExpInfoLabels[exp][-1].configure(text='No',fg='red')                    
+                    #Update fridge and incubator status to reflect whether they are loaded or unloaded
+                    incubatorLoadUnload = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')[exp]
+                    fridgeLoadUnload = np.loadtxt(finalOutputPath+'fridgeLoadUnload.txt',delimiter=',')[exp]
+                    if incubatorLoadUnload == 1:
+                        self.allExpInfoLabels[exp][-3].configure(text='Yes',fg='green')
+                    else:
+                        self.allExpInfoLabels[exp][-3].configure(text='No',fg='red')
+                    if fridgeLoadUnload == 1:
+                        self.allExpInfoLabels[exp][-2].configure(text='Yes',fg='green')
+                    else:
+                        self.allExpInfoLabels[exp][-2].configure(text='No',fg='red')
                 else:
                     for k in range(len(allLabels)-1):
                         self.allExpInfoLabels[exp][k].configure(text=EMPTYTEXT,fg='black')
             
-            #Update plate change deadlines
-            for exp in range(NUMEXP):
-                if exp in finalPlateChangeDict:
-                    finalPlateChangeStrings = finalPlateChangeDict[exp]
-                    for i in range(2*(maxPlateChangeLen-len(finalPlateChangeDict[exp]))):
-                        finalPlateChangeStrings+=['']
-                    finalPlateChangeString = '\n'.join(finalPlateChangeStrings)
-                    self.allExpInfoLabels[exp][-2].configure(text=finalPlateChangeString)
-                else: 
-                    if maxPlateChangeLen > 0:
-                        decrement = maxPlateChangeLen*2 - 1
-                        finalPlateChangeString = '\n'.join([EMPTYTEXT]+['']*decrement)
-                        self.allExpInfoLabels[exp][-2].configure(text=finalPlateChangeString)
-            #Add in extra newlines to keep spacing consistent
-            if maxPlateChangeLen > 0:
-                decrement = maxPlateChangeLen*2 - 1
-                self.headerLabels[-2].configure(text='\n'.join([allLabels[-2]]+['']*decrement))
-            # REMOVE diti warning (calculations out of date)
-                         
             #Update diti warning label
-            if "masterSchedule.txt" in os.listdir():
-                with open("masterSchedule.txt", "r") as schedule:
+            if "masterSchedule.txt" in os.listdir(finalInputPath):
+                with open(finalInputPath+"masterSchedule.txt", "r") as schedule:
                     lines = schedule.readlines()
                 startLine = 0
                 numExperiments = 0
@@ -201,8 +158,6 @@ class ExperimentHomePage(tk.Frame):
                     if 'Experiment ' in line:
                         numExperiments+=1
                 singleExperiment = numExperiments == 1
-                #wafers = int(np.loadtxt(finalPath+'DiTisite.txt'))
-                #remainingRows = 15-wafers-1
 
                 currentRow = 0
                 currentLine = 0
@@ -224,17 +179,6 @@ class ExperimentHomePage(tk.Frame):
                             currentLine = i
                         else:
                             nextTimepointExists = True
-                            '''
-                            cutoff = currentRow + remainingRows
-                            if row > cutoff and (cutoff != 0):
-                                #Determine whether previous timepoint could finish
-                                difference = allRows[-1] - allRows[-2]
-                                if allRows[-2]+difference-1 <= cutoff:
-                                    finalTimepoint = lines[i]
-                                else:
-                                    finalTimepoint = lines[i-1]
-                                break
-                        '''
                 nextTimepointLine = 0
                 if nextTimepointExists:
                     for i,line in enumerate(lines):
@@ -268,54 +212,64 @@ class ExperimentHomePage(tk.Frame):
                         nextTimepointLabel.configure(text=nextTimepointString)
                     else:
                         nextTimepointLabel.configure(text='')
-                """
-                #Update diti warning label
-                if finalTimepoint == '':
-                    ditiWarningLabel.config(text='')
+            #Enable/disable generate matrix and quit buttons
+            allIncubatorStrings = [self.allExpInfoLabels[exp][-3]['text'] for exp in range(NUMEXP)]
+            allFridgeStrings = [self.allExpInfoLabels[exp][-2]['text'] for exp in range(NUMEXP)]
+            allAddedStrings = [self.allExpInfoLabels[exp][-1]['text'] for exp in range(NUMEXP)]
+            fullCount = 0
+            emptyCount = 0
+            noCount = 0
+            incubatorCount = 0
+            fridgeCount = 0
+            for addedString,incubatorString,fridgeString in zip(allAddedStrings,allIncubatorStrings,allFridgeStrings):
+                if addedString == EMPTYTEXT:
+                    emptyCount+=1
                 else:
-                    if len(validExps) > 0:
-                        if singleExperiment:
-                            expID = self.allExperimentParameters[validExps[0]]['experimentID']
-                        else:
-                            expID = finalTimepoint.split(': ')[0].split('-')[1]
-                        tipChangeDeadline = finalTimepoint.split(': ')[1].split(' (')[0]
-                        ditiWarningLabel.config(text='Change tips before '+tipChangeDeadline+' ('+expID+' timepoint)')
-                """
-                for exp in range(NUMEXP):
-                    allAddedStrings = [self.allExpInfoLabels[exp][-1]['text'] for exp in range(NUMEXP)]
-                    emptyCount = 0
-                    noCount = 0
-                    for addedString in allAddedStrings:
-                        if addedString == EMPTYTEXT:
-                            emptyCount+=1
-                        elif addedString == 'No':
-                            noCount+=1
-                    if emptyCount == NUMEXP:
-                        generateButton.config(state=tk.DISABLED)
+                    fullCount+=1
+                    if addedString == 'No':
+                        noCount+=1
+                    if incubatorString == 'Yes':
+                        incubatorCount+=1
+                    if fridgeString == 'Yes':
+                        fridgeCount+=1
+            #If there are no added experiments
+            if emptyCount == NUMEXP:
+                generateButton.config(state=tk.DISABLED)
+                nextTimepointLabel.configure(text='')
+            else:
+                #Only enable matrix generation if all incubator and fridge positions are loaded 
+                if fullCount == incubatorCount and fullCount == fridgeCount:
+                    generateButton.config(state=tk.NORMAL)
+                else:
+                    generateButton.config(state=tk.DISABLED)
+                if noCount > 0:
+                    quitButton.config(state=tk.DISABLED)
+                else:
+                    quitButton.config(state=tk.NORMAL)
+            #Only enable experiment removal button if incubator and fridge are unloaded:
+            for exp in range(NUMEXP):
+                if self.allExpInfoLabels[exp][-3]['text'] != EMPTYTEXT:
+                    if self.allExpInfoLabels[exp][-3]['text'] == 'No' and self.allExpInfoLabels[exp][-3]['text'] == 'No':
+                        allRemoveButtons[exp].config(state=tk.NORMAL)
                     else:
-                        generateButton.config(state=tk.NORMAL)
-                        if noCount > 0:
-                            quitButton.config(state=tk.DISABLED)
-                        else:
-                            quitButton.config(state=tk.NORMAL)
-
+                        allRemoveButtons[exp].config(state=tk.DISABLED)
             #ttk.Separator(expFrame, orient='horizontal').place(relx=0,rely=0+separatorOffset*(len(allLabels)-1+maxPlateChangeLen),relwidth=1)
-            self.after(60000, updateExperimentLabels)
+            self.after(5000, updateExperimentLabels)
 
         def editExp(expNum):
             master.switch_frame(ExperimentInfoPage,expNum)
 
         def removeExp(expNum):
             if messagebox.askokcancel(title='Warning',message='Are you sure you want to delete Experiment '+str(expNum+1)+'?'):
-                #if 'schedule_'+self.allExperimentParameters[expNum]['experimentID']+'.txt' in os.listdir(schedulePath):
-                #    os.remove(schedulePath+'schedule_'+self.allExperimentParameters[expNum]['experimentID']+'.txt')
                 if 'matrix_'+self.allExperimentParameters[expNum]['experimentID']+'.txt' in os.listdir(matrixPath):
                     os.remove(matrixPath+'matrix_'+self.allExperimentParameters[expNum]['experimentID']+'.txt')
                 self.allExperimentParameters[expNum] = {}
-                with open('allExperimentParameters.pkl','wb') as f:
+                with open(finalInputPath+'experimentParameters.pkl','wb') as f:
                     pickle.dump(self.allExperimentParameters,f)
                 updateExperimentLabels()
-                allProgressBars[expNum]['value'] = 0 
+                allProgressBars[expNum]['value'] = 0
+                editContainerStatus(incubatorPath, expNum+1, [0]*22)
+                editContainerStatus(fridgePath, expNum+1, [0]*44)
                 style.configure('text.Horizontal.TProgressbar'+str(expNum+1), text='0 %')
         
         self.headerLabels = []
@@ -340,15 +294,12 @@ class ExperimentHomePage(tk.Frame):
             separatorOffset = 0.06
             for j in range(len(allLabels)-1):
                 expInfoLabel = tk.Label(specificExpFrame,text=EMPTYTEXT)
-                #ttk.Separator(expFrame, orient='horizontal').place(relx=0,rely=0+separatorOffset*j,relwidth=1)
-                #expInfoLabel.grid(row=2+j*2,column=expNum*2,columnspan=2)
                 expInfoLabel.grid(row=1+j,column=expNum*2,columnspan=2)
                 specificExpInfoLabels.append(expInfoLabel)
             self.allExpInfoLabels.append(specificExpInfoLabels)
             style.layout('text.Horizontal.TProgressbar'+str(expNum+1), pbarStyleArguments)
             style.configure('text.Horizontal.TProgressbar'+str(expNum+1), text='0 %')
             pb = ttk.Progressbar(specificExpFrame, style='text.Horizontal.TProgressbar'+str(expNum+1), mode='determinate',length=150)
-            #pb = ttk.Progressbar(specificExpFrame,orient='horizontal',mode='determinate',length=150)
             pb.grid(row=len(allLabels),column=expNum*2,columnspan=2,pady=(0,10))
             editButton = ttk.Button(specificExpFrame,text='Edit',command=partial(editExp,expNum),width=10)
             editButton.grid(row=len(allLabels)+1,column=expNum*2,sticky=tk.E)
@@ -359,15 +310,14 @@ class ExperimentHomePage(tk.Frame):
             allProgressBars.append(pb)
 
         def generateFullMatrix():
-            experimentIDsToIntegrate,experimentTypesToIntegrate,experimentsToIntegrate = [],[],[] # TODO: Change types to protocol dicts
+            experimentIDsToIntegrate,experimentProtocolsToIntegrate,experimentsToIntegrate = [],[],[]
             for i,l in enumerate(self.allExpInfoLabels):
                 expName = l[1]['text']
                 if expName != EMPTYTEXT:
-                    experimentType = self.allExperimentParameters[i]['experimentType']
-                    experimentType = experimentTypeDict[experimentType]
+                    protocolParameters = self.allExperimentParameters[i]['protocolParameters']
                     experimentIDsToIntegrate.append(expName)
                     experimentsToIntegrate.append(i)
-                    experimentTypesToIntegrate.append(experimentType)
+                    experimentProtocolsToIntegrate.append(protocolParameters)
             if len(experimentsToIntegrate) == 0:
                 messagebox.showwarning(title='Error',message='At least one experiment must be created before a matrix can be generated. Please try again.')
             else:
@@ -383,11 +333,11 @@ class ExperimentHomePage(tk.Frame):
                         self.allExperimentParameters[exp]['daysAgo'] = trueDaysAgo
                         
                         tempNumRows = generateExperimentMatrix(singleExperiment=False,**self.allExperimentParameters[exp])
-                    combineExperiments(experimentIDsToIntegrate,experimentTypesToIntegrate) # TODO: Change to experiment protocols
+                    combineExperiments(experimentIDsToIntegrate,experimentProtocolsToIntegrate)
                 messagebox.showinfo(title='Success',message='Experiment matrix generated!')
                 for exp in experimentsToIntegrate:
                     self.allExperimentParameters[exp]['addedToMatrix'] = True
-                with open('allExperimentParameters.pkl','wb') as f:
+                with open(finalInputPath+'experimentParameters.pkl','wb') as f:
                     pickle.dump(self.allExperimentParameters,f)
             updateExperimentLabels()
 
@@ -417,24 +367,15 @@ class ExperimentInfoPage(tk.Frame):
         mainWindow = tk.Frame(self)
         mainWindow.pack(side=tk.TOP,padx=10)
         
-        #Disallow selection of cooling positions and incubator positions that are currently in use
-        # TODO: Remove (GUI calculates positions for researcher)
-        allExpParameters = pickle.load(open('allExperimentParameters.pkl','rb'))
-        reservedRacks,reservedCooling = [],[]
-        for exp in allExpParameters:
-            if exp != expNum:
-                if 'numConditions' in allExpParameters[exp]:
-                    plateOffset = allExpParameters[exp]['plateOffset']
-                    numPlates = int(math.ceil(allExpParameters[exp]['numConditions']/96))
-                    reservedRacks+=[x for x in range(plateOffset,plateOffset+numPlates)]
-                    reservedCooling += allExpParameters[exp]['platePoseRestriction']
+        allExpParameters = pickle.load(open(finalInputPath+'experimentParameters.pkl','rb'))
+        experimentProtocols = pickle.load(open(finalInputPath+'experimentProtocols.pkl','rb'))
         #Set defaults to saved values if entry already exists; does not quite work for multiplates
         tempExpParameters = allExpParameters[expNum]
-        expParameterList = ['experimentType','experimentID','plateOffset','platePoseRestriction','numConditions','blankColumns','numTimepoints','startTime','timepointList','daysAgo']
-        defaultValueDict = {k:v for k,v in zip(expParameterList,[list(experimentTypeDict.keys())[0],'','  ',[True]*4,96,[False]*12,12,['  ','  ','  '],[],0])}
+        expParameterList = ['experimentProtocol','experimentID','numPlates','blankColumns','numTimepoints','startTime','timepointList','daysAgo']
+        defaultValueDict = {k:v for k,v in zip(expParameterList,[list(experimentProtocols.keys())[0],'','',[False]*12,'',['  ','  ','  '],[],0])}
         for expParameter in expParameterList:
             if expParameter in tempExpParameters:
-                if expParameter in ['experimentType','experimentID','numTimepoints','plateOffset','numConditions']:
+                if expParameter in ['experimentProtocol','experimentID','numTimepoints','numPlates']:
                     defaultValueDict[expParameter] = tempExpParameters[expParameter]
                 elif expParameter == 'daysAgo':
                     timeDifference = datetime.today() - datetime.strptime(tempExpParameters['fullStart'],'%Y-%m-%d %a %I:%M %p') 
@@ -442,14 +383,11 @@ class ExperimentInfoPage(tk.Frame):
                     if timeDifference.seconds > 0:
                         roundupDay = 1
                     defaultValueDict[expParameter] = timeDifference.days+roundupDay 
-                elif expParameter in ['platePoseRestriction','blankColumns']:
+                elif expParameter == 'blankColumns':
                     bools = defaultValueDict[expParameter].copy() 
                     trueBools = []
                     for i,x in enumerate(defaultValueDict[expParameter]):
-                        if expParameter == 'platePoseRestriction':
-                            negation = not bools[int(x)-1]
-                        else:
-                            negation = bools[int(x)-1]
+                        negation = bools[int(x)-1]
                         if i+1 not in tempExpParameters[expParameter]:
                             trueBools.append(negation)
                         else:
@@ -465,9 +403,8 @@ class ExperimentInfoPage(tk.Frame):
             #Also check for re-enabling "enter timepoints" button
             try:
                 # TODO: Remove incubator position??
-                allWidgetChecks = [experimentTypeVar.get(),incubatorPlatePosVar.get(),meridianVar.get(),minuteVar.get()]
-                checkButtonChecks = [x.get() for x in coolingPlatePosVarList]
-                allWidgetBools = [experimentNameEntry.get() != '']+[x != '  ' for x in allWidgetChecks]+[any(checkButtonChecks)]
+                allWidgetChecks = [experimentProtocolVar.get(),meridianVar.get(),minuteVar.get()]
+                allWidgetBools = [experimentNameEntry.get() != '']+[x != '  ' for x in allWidgetChecks]
                 if all(allWidgetBools):
                     enterTpButton.config(state=tk.NORMAL)
                 else:
@@ -476,10 +413,10 @@ class ExperimentInfoPage(tk.Frame):
                 enterTpButton.config(state=tk.DISABLED)
                 
         tk.Label(mainWindow,text='Experiment type:').grid(row=0,column=0,sticky=tk.W)
-        experimentTypeList = list(experimentTypeDict.keys()) 
-        experimentTypeVar = tk.StringVar()
-        experimentTypeDropdown = ttk.OptionMenu(mainWindow,experimentTypeVar,defaultValueDict['experimentType'],*experimentTypeList,command=lambda _: enableFinish())
-        experimentTypeDropdown.grid(row=0,column=1,sticky=tk.W)
+        experimentProtocolList = list(experimentProtocols.keys()) 
+        experimentProtocolVar = tk.StringVar()
+        experimentProtocolDropdown = ttk.OptionMenu(mainWindow,experimentProtocolVar,defaultValueDict['experimentProtocol'],*experimentProtocolList,command=lambda _: enableFinish())
+        experimentProtocolDropdown.grid(row=0,column=1,sticky=tk.W)
         
         tk.Label(mainWindow,text='Experiment name:').grid(row=1,column=0,sticky=tk.W)
         experimentNameEntry = ttk.Entry(mainWindow,width=20)
@@ -488,66 +425,11 @@ class ExperimentInfoPage(tk.Frame):
         experimentNameEntry.bind("<Key>",enableFinish)
 
         startPos = 4
-        # TODO: Replace with function to calculate incubator positions
-        tk.Label(mainWindow,text='Incubator plate position:').grid(row=startPos,column=0,sticky=tk.W)
-        incubatorPlatePosList = list(range(1,23)) 
-        incubatorPlatePosVar = tk.IntVar()
-        incubatorPlatePosDropdown = ttk.OptionMenu(mainWindow,incubatorPlatePosVar,defaultValueDict['plateOffset'],*incubatorPlatePosList,command=lambda _: enableFinish())
-        incubatorPlatePosDropdown.grid(row=startPos,column=1,sticky=tk.W)
         
-        tk.Label(mainWindow,text='Cooling plate positions:').grid(row=3,column=0,sticky=tk.W)
-        coolingPlatePosList = list(range(1,5))
-        coolingPlatePosCBList,coolingPlatePosVarList = [],[]
-        coolingCBFrame = tk.Frame(mainWindow)
-        coolingCBFrame.grid(row=3,column=1,sticky=tk.W)
-        for pos in coolingPlatePosList:
-            coolingPlatePosVar = tk.BooleanVar(value=defaultValueDict['platePoseRestriction'][pos-1])
-            coolingPlatePosCB = ttk.Checkbutton(coolingCBFrame,variable=coolingPlatePosVar)
-            l = tk.Label(coolingCBFrame,text=str(pos))
-            l.grid(row=1,column=pos-1,sticky=tk.W)
-            if pos in reservedCooling:
-                coolingPlatePosVar.set(False)
-                coolingPlatePosCB['state'] = tk.DISABLED
-                l.config(fg='grey')
-            coolingPlatePosCB.grid(row=0,column=pos-1,sticky=tk.W)
-            coolingPlatePosCBList.append(coolingPlatePosCB)
-            coolingPlatePosVarList.append(coolingPlatePosVar)
-        # TODO: Remove incubator selection
-        def disableIncubatorEntries():
-            conditionNumber = conditionNumberVar.get()
-            numPlates = math.ceil(conditionNumber/96)
-            plateDisablingRadius = numPlates-1
-            #First re-enable any disabled option menu at previous condition number
-            for i in range(len(incubatorPlatePosList)):
-                incubatorPlatePosDropdown['menu'].entryconfigure(i, state = "normal")
-            for reservedRack in reservedRacks:
-                for i in range(max(reservedRack-plateDisablingRadius,1),reservedRack+1):
-                    incubatorPlatePosDropdown['menu'].entryconfigure(i-1, state = "disabled")
-            #disableTimepointEntries()
-
-        timepointNumberList = list(range(1,25))
-        def disableTimepointEntries():
-            conditionNumber = conditionNumberVar.get()
-            invalidTimepoints = [x for x in timepointNumberList if (x*conditionNumber)%384 != 0]
-            #First re-enable any disabled option menu at previous condition number
-            for i in range(len(timepointNumberList)):
-                timepointNumberDropdown['menu'].entryconfigure(i, state = "normal")
-            for invalidTimepoint in invalidTimepoints:
-                timepointNumberDropdown['menu'].entryconfigure(invalidTimepoint-1, state = "disabled")
-
-        tk.Label(mainWindow,text='Number of conditions:').grid(row=2,column=0,sticky=tk.W)
-        conditionNumberList =[16,24,32,48,56,64,72,80,88,96,128,192,256,288,384]
-        conditionNumberVar = tk.IntVar()
-        # TODO: Remove incubator entry disabling
-        conditionNumberDropdown = ttk.OptionMenu(mainWindow,conditionNumberVar,defaultValueDict['numConditions'],*conditionNumberList,command=lambda _: disableIncubatorEntries())
-        conditionNumberDropdown.grid(row=2,column=1,sticky=tk.W)
-
-        # TODO: Remove incubator entry disabling
-        #Disable racks that are already occupied
-        plateDisablingRadius = math.ceil(defaultValueDict['numConditions']/96)-1
-        for reservedRack in reservedRacks:
-            for i in range(max(reservedRack-plateDisablingRadius,1),reservedRack+1):
-                incubatorPlatePosDropdown['menu'].entryconfigure(i-1, state = "disabled")
+        tk.Label(mainWindow,text='Number of plates:').grid(row=2,column=0,sticky=tk.W)
+        plateNumberEntry = tk.Entry(mainWindow,width=10)
+        plateNumberEntry.insert(tk.END,str(defaultValueDict['numPlates']))
+        plateNumberEntry.grid(row=2,column=1,sticky=tk.W)
         
         tk.Label(mainWindow,text='Blank columns:').grid(row=startPos+1,column=0,sticky=tk.W)
         blankList = list(range(1,13))
@@ -564,15 +446,10 @@ class ExperimentInfoPage(tk.Frame):
         
         startPos2 = 6
 
-        #tk.Label(mainWindow,text='Number of timepoints:').grid(row=startPos2,column=0,sticky=tk.W)
-        #timepointNumberEntry = ttk.Entry(mainWindow,width=5)
-        #timepointNumberEntry.grid(row=startPos2,column=1,sticky=tk.W)
-        #timepointNumberEntry.insert(tk.END, str(defaultValueDict['numTimepoints']))
-        
         tk.Label(mainWindow,text='Number of timepoints:').grid(row=startPos2,column=0,sticky=tk.W)
-        timepointNumberVar = tk.IntVar()
-        timepointNumberDropdown = ttk.OptionMenu(mainWindow,timepointNumberVar,str(defaultValueDict['numTimepoints']),*timepointNumberList)
-        timepointNumberDropdown.grid(row=startPos2,column=1,sticky=tk.W)
+        timepointNumberEntry = tk.Entry(mainWindow,width=10)
+        timepointNumberEntry.insert(tk.END,str(defaultValueDict['numTimepoints']))
+        timepointNumberEntry.grid(row=startPos2,column=1,sticky=tk.W)
 
         tk.Label(mainWindow,text='Experiment start time:').grid(row=startPos2+1,column=0,sticky=tk.W)
         startTimeFrame = tk.Frame(mainWindow)
@@ -596,30 +473,25 @@ class ExperimentInfoPage(tk.Frame):
         daysAgoEntry.insert(tk.END,str(defaultValueDict['daysAgo']))
         
         def collectInputs():
-            # TODO: Change inputs to match matrixGenerator
             experimentParameters = {}
-            experimentParameters['experimentType'] = experimentTypeVar.get()
             experimentParameters['experimentID'] = experimentNameEntry.get()
-            experimentParameters['plateOffset'] = incubatorPlatePosVar.get() # TODO: Replace manual incubator entry with function
-            experimentParameters['platePoseRestriction'] = [x+1 for x in range(4) if coolingPlatePosVarList[x].get()]
-            experimentParameters['numConditions'] = conditionNumberVar.get()
+            experimentParameters['protocolParameters'] = experimentProtocols[experimentProtocolVar.get()]
+            experimentParameters['incubatorPositions'] = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
+            experimentParameters['fridgePositions'] = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
+            experimentParameters['numPlates'] = int(plateNumberEntry.get())
             experimentParameters['blankColumns'] = [x+1 for x in range(12) if blankVarList[x].get()]
-            #experimentParameters['numTimepoints'] = int(timepointNumberEntry.get())
-            experimentParameters['numTimepoints'] = timepointNumberVar.get()
-            experimentParameters['startTime'] = hourVar.get()+':'+minuteVar.get()+' '+meridianVar.get()
+            experimentParameters['numTimepoints'] = int(timepointNumberEntry.get())
             experimentParameters['timepointlist'] = []
-            experimentParameters['daysAgo'] = int(daysAgoEntry.get())
-    
+            experimentParameters['startTime'] = hourVar.get()+':'+minuteVar.get()+' '+meridianVar.get()
+            experimentParameters['daysAgo'] = int(daysAgoEntry.get())    
             now = datetime.today() - dt.timedelta(days=experimentParameters['daysAgo'])
             parsedStartTime = datetime.strptime(experimentParameters['startTime'],'%I:%M %p')
             fullStartTime = datetime(now.year,now.month,now.day,parsedStartTime.hour,parsedStartTime.minute)
             experimentParameters['fullStart'] = fullStartTime.strftime('%Y-%m-%d %a %I:%M %p')
-            experimentParameters['addedToMatrix'] = False 
+            experimentParameters['addedToMatrix'] = False
 
             master.switch_frame(TimepointEntryPage,expNum,experimentParameters)
         
-        #disableTimepointEntries()
-
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,pady=20)
         enterTpButton = ttk.Button(buttonWindow, text="Enter timepoints",command=lambda: collectInputs())
@@ -635,7 +507,8 @@ class TimepointEntryPage(tk.Frame):
         mainWindow.pack(side=tk.TOP,padx=10)
         
         timepointTemplates = {
-                8:[3,7,15,23,35,47,59,72],
+                6:[3,6,12,24,48,72],
+                8:[3,6,12,18,24,36,48,72],
                 12:[1,3,6,12,18,24,30,36,42,48,60,72],
                 16:[1,3,5,7,11,15,19,23,29,35,41,47,53,59,65,72],
                 24:[1,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63,66,72]
@@ -657,10 +530,14 @@ class TimepointEntryPage(tk.Frame):
 
         def collectInputs():
             experimentParameters['timepointlist'] = [float(x.get()) for x in timepointEntryList]
-            allExperimentParameters = pickle.load(open('allExperimentParameters.pkl','rb'))
+            allExperimentParameters = pickle.load(open(finalInputPath+'experimentParameters.pkl','rb'))
             allExperimentParameters[expNum] = experimentParameters
-            with open('allExperimentParameters.pkl','wb') as f:
+            with open(finalInputPath+'experimentParameters.pkl','wb') as f:
                 pickle.dump(allExperimentParameters,f)
+            
+            #Write to containers
+            editContainerStatus(incubatorPath,expNum+1,experimentParameters['incubatorPositions'])
+            editContainerStatus(fridgePath,expNum+1,experimentParameters['fridgePositions'])
             master.switch_frame(ExperimentHomePage)
 
         buttonWindow = tk.Frame(self)

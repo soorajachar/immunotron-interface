@@ -1,15 +1,20 @@
-import pickle
+import pickle,platform
 import unittest
 from utils import calculateIncubatorPositions, calculateFridgePositions
 
 
 class TestUtils_EmptyUnit(unittest.TestCase):
     ''' Test that incubator, fridge position calculations work across experiment protocols for an empty unit'''
+    finalInputPath = 'misc/'
+    if platform.system() == 'Windows':
+        finalOutputPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+    else:
+        finalOutputPath = 'variables/'
     @classmethod
     def setUpClass(self):
         self.incubator = dict(zip(range(1,23), [None]*22))
         self.fridge = dict(zip(range(1,45), [None]*44))
-        self.experimentProtocols = pickle.load(open('/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/experimentProtocols.pkl', 'rb'))
+        self.experimentProtocols = pickle.load(open(finalInputPath+'experimentProtocols.pkl', 'rb'))
 
     def test_incubator_supOnly_1Plate_12timepoints(self):
         incubatorPositions = calculateIncubatorPositions(self.incubator, self.experimentProtocols['Supernatant (Sooraj)'], 1, 12)
@@ -53,6 +58,11 @@ class TestUtils_EmptyUnit(unittest.TestCase):
 
 class TestUtils_FullUnit(unittest.TestCase):
     ''' Test that positions are assigned correctly when some slots are taken'''
+    finalInputPath = 'misc/'
+    if platform.system() == 'Windows':
+        finalOutputPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+    else:
+        finalOutputPath = 'variables/'
     @classmethod
     def setUpClass(self):
         self.incubator = dict(zip(range(1,23), [None]*22))
@@ -61,7 +71,7 @@ class TestUtils_FullUnit(unittest.TestCase):
             if i < 20:
                 self.incubator[i] = 'Full'
             self.fridge[i] = 'Full'
-        self.experimentProtocols = pickle.load(open('/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/experimentProtocols.pkl', 'rb'))
+        self.experimentProtocols = pickle.load(open(finalInputPath+'experimentProtocols.pkl', 'rb'))
     
     
     def test_incubator_supOnly_1Plate_12timepoints(self):
@@ -89,6 +99,11 @@ class TestUtils_FullUnit(unittest.TestCase):
 
 class TestUtils_ScatteredUnit(unittest.TestCase):
     ''' Test that positions are assigned correctly when some slots are taken'''
+    finalInputPath = 'misc/'
+    if platform.system() == 'Windows':
+        finalOutputPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+    else:
+        finalOutputPath = 'variables/'
     @classmethod
     def setUpClass(self):
         self.incubator = dict(zip(range(1,23), [None]*22))
@@ -96,7 +111,7 @@ class TestUtils_ScatteredUnit(unittest.TestCase):
             self.incubator[i] = 'Full'
         for i in range(13,21):
             self.incubator[i] = 'Full'
-        self.experimentProtocols = pickle.load(open('/Users/wahlstenml/Documents/immunotron-interface/immunotron-interface/experimentProtocols.pkl', 'rb'))
+        self.experimentProtocols = pickle.load(open(finalInputPath+'experimentProtocols.pkl', 'rb'))
     
     def test_incubator_supOnly_3Plates_12timepoints(self):
         incubatorPositions = calculateIncubatorPositions(self.incubator, self.experimentProtocols['Supernatant (Sooraj)'], 3, 12)

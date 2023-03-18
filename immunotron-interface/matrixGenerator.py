@@ -7,16 +7,18 @@ import numpy as np
 from integrateExperiments import integrateExperiments
 import platform
 
-culturePlateLength = 12
-culturePlateWidth = 8
-
 def generateExperimentMatrix(singleExperiment=True,**kwargs):
-    schedulePath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/schedules/' 
-    matrixPath = '/Users/acharsr/Documents/immunotron-interface/immunotron-interface/matrices/'
+    schedulePath = 'schedules/' 
+    matrixPath = 'matrices/'
+    finalInputPath = 'misc/'
     if platform.system() == 'Windows':
-        finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+        finalOutputPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
     else:
-        finalPath = ''
+        finalOutputPath = 'variables/'
+
+    culturePlateLength = 12
+    culturePlateWidth = 8
+
     experimentID = kwargs['experimentID'] # experiment name (str)
     protocol = kwargs['protocolParameters'] # protocol parameters (dict) TODO: Change in GUI to pass values from experimentProtocols[protocolName]
     plateArray = np.array(kwargs['incubatorPositions']) # incubator plate positions (list) TODO: Change in GUI to function that calculates positions
@@ -174,10 +176,10 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     createSchedule(timename)
     
     if singleExperiment:
-        np.savetxt(finalPath+'numTimepoints.txt',np.array([numTimepoints]),fmt='%d',delimiter=',')
+        np.savetxt(finalOutputPath+'numTimepoints.txt',np.array([numTimepoints]),fmt='%d',delimiter=',')
         name='Full_Matrix_OnlySup.txt'
-        np.savetxt(finalPath+name,fullMatrix,fmt='%d',delimiter=',')
-        timename = 'masterSchedule.txt'
+        np.savetxt(finalOutputPath+name,fullMatrix,fmt='%d',delimiter=',')
+        timename = finalInputPath+'masterSchedule.txt'
         createSchedule(timename,master=True)
         timename = schedulePath+'masterSchedule.txt'
         createSchedule(timename,master=True)

@@ -151,7 +151,7 @@ def editContainerStatus(path, experimentSlot, positions):
     '''
     
     container = np.loadtxt(path, delimiter=',')
-    numPositions = container.shape[1]
+    numPositions = len(positions)
     container[experimentSlot-1, 0:numPositions] = positions
     container[experimentSlot-1, numPositions:] = 0
-    np.savetxt(path, container, delimiter=',')
+    np.savetxt(path, container, delimiter=',', fmt='%i')
