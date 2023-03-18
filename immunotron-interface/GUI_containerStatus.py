@@ -89,15 +89,23 @@ class ContainerStatusPage(tk.Frame):
             palette = sns.color_palette(sns.color_palette(),10).as_hex()
             incubatorStatus = np.loadtxt(finalOutputPath+'incubatorStatus.txt',delimiter=',')
             fridgeStatus = np.loadtxt(finalOutputPath+'fridgeStatus.txt',delimiter=',')
+            incubatorLoadUnload = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
+            fridgeLoadUnload = np.loadtxt(finalOutputPath+'fridgeLoadUnload.txt',delimiter=',')
             for expSlot in range(NUMEXP):
                 for row in range(22):
                     label = 22-row-1
-                    if row+1 in list(incubatorStatus[expSlot]):
-                        self.incubatorTower1Labels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                    if incubatorLoadUnload[expSlot] == 1:
+                        if row+1 in list(incubatorStatus[expSlot]):
+                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                        else:
+                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='k')
                 for row in range(44):
                     label = 44-row-1
-                    if row+1 in list(fridgeStatus[expSlot]):
-                        self.fridgeLabels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                    if fridgeLoadUnload[expSlot] == 1:
+                        if row+1 in list(fridgeStatus[expSlot]):
+                            self.fridgeLabels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                        else:
+                            self.fridgeLabels[label].configure(text=str(row+1),fg='k')
 
             self.after(5000, updateContainerLabels)
 

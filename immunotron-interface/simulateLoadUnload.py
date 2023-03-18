@@ -13,8 +13,8 @@ else:
 expIDs = [0,1]
 #tower2s = [True,True]
 tower2s = [False,False]
-incAction = 'load'
-fridgeAction = 'load'
+incAction = 'unload'
+fridgeAction = 'unload'
 
 for tower2,expID in zip(tower2s,expIDs):
     if incAction == 'load':
