@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from functools import partial
 from tkinter import messagebox
+import seaborn as sns
 from matrixGenerator import generateExperimentMatrix,combineExperiments
 from utils import calculateIncubatorPositions,calculateFridgePositions,checkContainerStatus,editContainerStatus
 import tkinter.ttk as ttk
@@ -253,6 +254,8 @@ class ExperimentHomePage(tk.Frame):
                         allRemoveButtons[exp].config(state=tk.NORMAL)
                     else:
                         allRemoveButtons[exp].config(state=tk.DISABLED)
+                else:
+                    allRemoveButtons[exp].config(state=tk.DISABLED)
             #ttk.Separator(expFrame, orient='horizontal').place(relx=0,rely=0+separatorOffset*(len(allLabels)-1+maxPlateChangeLen),relwidth=1)
             self.after(5000, updateExperimentLabels)
 
@@ -289,7 +292,8 @@ class ExperimentHomePage(tk.Frame):
         for expNum in range(NUMEXP):
             specificExpFrame = tk.Frame(expFrame, borderwidth = 1,relief=tk.RIDGE)
             specificExpFrame.grid(row=0,column=expNum+1,sticky=tk.EW)
-            tk.Label(specificExpFrame,text=ascii_uppercase[expNum],font='-weight bold').grid(row=0,column=expNum*2,columnspan=2)
+            slotColor = sns.color_palette(sns.color_palette(),10).as_hex()[expNum]
+            tk.Label(specificExpFrame,text=ascii_uppercase[expNum],font='-weight bold',fg=slotColor).grid(row=0,column=expNum*2,columnspan=2)
             specificExpInfoLabels = []
             separatorOffset = 0.06
             for j in range(len(allLabels)-1):
@@ -301,9 +305,9 @@ class ExperimentHomePage(tk.Frame):
             style.configure('text.Horizontal.TProgressbar'+str(expNum+1), text='0 %')
             pb = ttk.Progressbar(specificExpFrame, style='text.Horizontal.TProgressbar'+str(expNum+1), mode='determinate',length=150)
             pb.grid(row=len(allLabels),column=expNum*2,columnspan=2,pady=(0,10))
-            editButton = ttk.Button(specificExpFrame,text='Edit',command=partial(editExp,expNum),width=10)
+            editButton = ttk.Button(specificExpFrame,text='Edit',command=partial(editExp,expNum),width=6)
             editButton.grid(row=len(allLabels)+1,column=expNum*2,sticky=tk.E)
-            removeButton = ttk.Button(specificExpFrame,text='Remove',command=partial(removeExp,expNum),width=10)
+            removeButton = ttk.Button(specificExpFrame,text='Remove',command=partial(removeExp,expNum),width=6)
             removeButton.grid(row=len(allLabels)+1,column=expNum*2+1,sticky=tk.W)
             allEditButtons.append(editButton)
             allRemoveButtons.append(removeButton)
@@ -345,11 +349,6 @@ class ExperimentHomePage(tk.Frame):
         nextTimepointWindow.pack(side=tk.TOP,padx=10,pady=(10,0))
         nextTimepointLabel = tk.Label(nextTimepointWindow,text='')
         nextTimepointLabel.pack()
-        
-        ditiWarningWindow = tk.Frame(self)
-        ditiWarningWindow.pack(side=tk.TOP,padx=10,pady=(10,10))
-        ditiWarningLabel = tk.Label(ditiWarningWindow,text='')
-        ditiWarningLabel.pack()
 
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,padx=10,pady=(10,10))

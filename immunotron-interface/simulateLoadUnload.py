@@ -11,19 +11,28 @@ else:
     finalOutputPath = 'variables/'
 
 expIDs = [0,1]
-incAction = 'unload'
-fridgeAction = 'unload'
+#tower2s = [True,True]
+tower2s = [False,False]
+incAction = 'load'
+fridgeAction = 'load'
 
-for expID in expIDs:
-
+for tower2,expID in zip(tower2s,expIDs):
     if incAction == 'load':
         arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
         arr[expID] = 1
         np.savetxt(finalOutputPath+'incubatorLoadUnload.txt',arr,delimiter=',')
+        if tower2:
+            arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload2.txt',delimiter=',')
+            arr[expID] = 1
+            np.savetxt(finalOutputPath+'incubatorLoadUnload2.txt',arr,delimiter=',')
     elif incAction == 'unload':
         arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
         arr[expID] = 0
         np.savetxt(finalOutputPath+'incubatorLoadUnload.txt',arr,delimiter=',')
+        if tower2:
+            arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
+            arr[expID] = 0
+            np.savetxt(finalOutputPath+'incubatorLoadUnload.txt',arr,delimiter=',')
 
     if fridgeAction == 'load':
         arr = np.loadtxt(finalOutputPath+'fridgeLoadUnload.txt',delimiter=',')
