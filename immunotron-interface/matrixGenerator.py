@@ -77,12 +77,15 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             timepointIntervals.append(1.0)
 
         # For a supernatant experiment (same plate(s) throughout), add a "timepoint" for each plate in the experiment (ex. 2 lines for 2 plates) and make list of incubator positions
-        if experimentType in [1,6]:
+        if experimentType in [1]:
             numTimepoints *= numCulturePlatesForExperiment
             plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numActualTimepoints)
         # For 1-plate-per-timepoint experiments, generate list of incubator positions (must be consecutive!)
         elif experimentType in [2,4,5]:
             plateArray = np.array(range(1+plateOffset,numTimepoints+1+plateOffset))
+        elif experimentType in [6]:
+            numTimepoints *= numCulturePlatesForExperiment
+            plateArray = np.tile(list(range(1+plateOffset,numCulturePlatesForExperiment+1+plateOffset)),numTimepoints)
 
         # Culture columns to aspirate (should be the same in 384 format)
         cultureColumnArray = np.zeros([numTimepoints,culturePlateLength]) # create blank base of matrix for pipetting
