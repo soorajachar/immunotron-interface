@@ -26,7 +26,8 @@ experimentTypeDict = {
         'Reverse Plating (Anagha)':3,
         'Supernatant+LD/Ab/Fix/Perm (Anagha)':4,
         'Supernatant+Fix/Perm+SupTransfer (Madison)':5,
-        'Reverse Kinetics (Dongya)':6
+        'Reverse Kinetics (Dongya)':6,
+        'SupTransfer_Only (Madison)':7
         }
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
