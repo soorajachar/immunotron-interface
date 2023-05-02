@@ -98,14 +98,14 @@ class ContainerStatusPage(tk.Frame):
                         if row+1 in list(incubatorStatus[expSlot]):
                             self.incubatorTower1Labels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
                         else:
-                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='k')
+                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black')
                 for row in range(44):
                     label = 44-row-1
                     if fridgeLoadUnload[expSlot] == 1:
                         if row+1 in list(fridgeStatus[expSlot]):
                             self.fridgeLabels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
                         else:
-                            self.fridgeLabels[label].configure(text=str(row+1),fg='k')
+                            self.fridgeLabels[label].configure(text=str(row+1),fg='black')
 
             self.after(5000, updateContainerLabels)
 
