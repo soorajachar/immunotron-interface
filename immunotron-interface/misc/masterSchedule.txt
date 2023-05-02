@@ -1,29 +1,6 @@
 USE TIMEPOINTS IN PARENTHESES TO SET TIMEPOINT ON ROBOT
 
-Experiment test1 Start Time: 2023-03-18 Sat 03:15 PM
-Experiment test2 Start Time: 2023-03-18 Sat 09:00 PM
+Experiment Test1 Start Time: 2023-05-02 Tue 03:30 PM
 
-Timepoint 1-test1: 2023-03-18 Sat 04:15 PM (1)
-Timepoint 2-test1: 2023-03-18 Sat 06:15 PM (4)
-Timepoint 3-test1: 2023-03-18 Sat 09:15 PM (7)
-Timepoint 1-test2: 2023-03-18 Sat 10:00 PM (10)
-Timepoint 2-test2: 2023-03-19 Sun 12:00 AM (14)
-Timepoint 3-test2: 2023-03-19 Sun 03:00 AM (18)
-Timepoint 4-test1: 2023-03-19 Sun 03:15 AM (22)
-Timepoint 4-test2: 2023-03-19 Sun 09:00 AM (25)
-Timepoint 5-test1: 2023-03-19 Sun 09:15 AM (29)
-Timepoint 5-test2: 2023-03-19 Sun 03:00 PM (32)
-Timepoint 6-test1: 2023-03-19 Sun 03:15 PM (36)
-Timepoint 6-test2: 2023-03-19 Sun 09:00 PM (39)
-Timepoint 7-test1: 2023-03-19 Sun 09:15 PM (43)
-Timepoint 7-test2: 2023-03-20 Mon 03:00 AM (46)
-Timepoint 8-test1: 2023-03-20 Mon 03:15 AM (50)
-Timepoint 8-test2: 2023-03-20 Mon 09:00 AM (53)
-Timepoint 9-test1: 2023-03-20 Mon 09:15 AM (57)
-Timepoint 9-test2: 2023-03-20 Mon 03:00 PM (60)
-Timepoint 10-test1: 2023-03-20 Mon 03:15 PM (64)
-Timepoint 10-test2: 2023-03-20 Mon 09:00 PM (67)
-Timepoint 11-test1: 2023-03-21 Tue 03:15 AM (71)
-Timepoint 11-test2: 2023-03-21 Tue 09:00 AM (74)
-Timepoint 12-test1: 2023-03-21 Tue 03:15 PM (78)
-Timepoint 12-test2: 2023-03-21 Tue 09:00 PM (81)
+Timepoint 1: 2023-05-02 Tue 04:30 PM (1)
+Timepoint 2: 2023-05-02 Tue 05:30 PM (2)

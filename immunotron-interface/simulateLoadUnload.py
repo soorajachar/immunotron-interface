@@ -6,7 +6,7 @@ schedulePath = 'schedules/'
 matrixPath = 'matrices/'
 finalInputPath = 'misc/'
 if platform.system() == 'Windows':
-    finalOutputPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+    finalOutputPath = 'C:/ProgramData/Tecan/EVOware/database/variables/'
 else:
     finalOutputPath = 'variables/'
 
