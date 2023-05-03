@@ -148,3 +148,4 @@ def integrateExperiments(experimentIDs, experimentProtocols):
     
     name = 'Full_Matrix_OnlySup.txt'
     np.savetxt(finalOutputPath+name,fullMatrix,fmt='%d',delimiter=',')
+    np.savetxt(finalOutputPath+'numTimepoints.txt',np.array([fullMatrix.shape[0]]),fmt='%d',delimiter=',')
