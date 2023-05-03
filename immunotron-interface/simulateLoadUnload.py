@@ -10,7 +10,23 @@ if platform.system() == 'Windows':
 else:
     finalOutputPath = 'variables/'
 
-expIDs = [0,1]
+def main():
+    simulateLoadUnload(0,1,1)
+
+def simulateLoadUnload(incubatorFridge, UnloadLoad, CurrentExperimentSlot):
+    container = 'incubator'
+    if incubatorFridge == 1:
+        container = 'fridge'
+    arr = np.loadtxt(finalOutputPath+'{}LoadUnload.txt'.format(container),delimiter=',')
+    if UnloadLoad == 1:
+        arr[CurrentExperimentSlot-1] = 1
+    else:
+        arr[CurrentExperimentSlot-1] = 0
+    np.savetxt(finalOutputPath+'{}LoadUnload.txt'.format(container),arr,delimiter=',', fmt='%d')
+
+main()
+
+""" expIDs = [0,1]
 #tower2s = [True,True]
 tower2s = [False,False]
 incAction = 'unload'
@@ -41,4 +57,4 @@ for tower2,expID in zip(tower2s,expIDs):
     elif fridgeAction == 'unload':
         arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
         arr[expID] = 0
-        np.savetxt(finalOutputPath+'fridgeLoadUnload.txt',arr,delimiter=',')
+        np.savetxt(finalOutputPath+'fridgeLoadUnload.txt',arr,delimiter=',') """
