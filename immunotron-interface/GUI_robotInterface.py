@@ -368,13 +368,16 @@ class ExperimentInfoPage(tk.Frame):
         
         allExpParameters = pickle.load(open(finalInputPath+'experimentParameters.pkl','rb'))
         experimentProtocols = pickle.load(open(finalInputPath+'experimentProtocols.pkl','rb'))
+        protocolIDToName = {experimentProtocols[x]['protocolID']:x for x in experimentProtocols}
         #Set defaults to saved values if entry already exists; does not quite work for multiplates
         tempExpParameters = allExpParameters[expNum]
         expParameterList = ['experimentProtocol','experimentID','numPlates','blankColumns','numTimepoints','startTime','timepointList','daysAgo']
         defaultValueDict = {k:v for k,v in zip(expParameterList,[list(experimentProtocols.keys())[0],'','',[False]*12,'',['  ','  ','  '],[],0])}
         for expParameter in expParameterList:
             if expParameter in tempExpParameters:
-                if expParameter in ['experimentProtocol','experimentID','numTimepoints','numPlates']:
+                if expParameter == 'experimentProtocol':
+                    defaultValueDict[expParameter] = protocolIDToName[tempExpParameters['protocolParameters']['protocolID']]
+                elif expParameter in ['experimentID','numTimepoints','numPlates']:
                     defaultValueDict[expParameter] = tempExpParameters[expParameter]
                 elif expParameter == 'daysAgo':
                     timeDifference = datetime.today() - datetime.strptime(tempExpParameters['fullStart'],'%Y-%m-%d %a %I:%M %p') 
@@ -410,7 +413,7 @@ class ExperimentInfoPage(tk.Frame):
                     enterTpButton.config(state=tk.DISABLED)
             except:
                 enterTpButton.config(state=tk.DISABLED)
-                
+        
         tk.Label(mainWindow,text='Experiment type:').grid(row=0,column=0,sticky=tk.W)
         experimentProtocolList = list(experimentProtocols.keys()) 
         experimentProtocolVar = tk.StringVar()
