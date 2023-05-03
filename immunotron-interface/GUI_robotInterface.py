@@ -478,8 +478,27 @@ class ExperimentInfoPage(tk.Frame):
             experimentParameters = {}
             experimentParameters['experimentID'] = experimentNameEntry.get()
             experimentParameters['protocolParameters'] = experimentProtocols[experimentProtocolVar.get()]
-            experimentParameters['incubatorPositions'] = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
-            experimentParameters['fridgePositions'] = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
+
+            #Need special logic here to avoid re-calculating incubator positions that were already assigned
+            oldIncubatorPositions = np.loadtxt(finalOutputPath+'incubatorStatus.txt',delimiter=',')[expNum]
+            oldIncubatorPositions = list(oldIncubatorPositions[oldIncubatorPositions != 0].astype(int))
+            newIncubatorPositions = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
+            if len(newIncubatorPositions) == len(oldIncubatorPositions):
+                finalIncubatorPositions = oldIncubatorPositions
+            else:
+                finalIncubatorPositions = newIncubatorPositions
+            experimentParameters['incubatorPositions'] = finalIncubatorPositions 
+            
+            #Need special logic here to avoid re-calculating fridge positions that were already assigned
+            oldFridgePositions = np.loadtxt(finalOutputPath+'fridgeStatus.txt',delimiter=',')[expNum]
+            oldFridgePositions = list(oldFridgePositions[oldFridgePositions != 0].astype(int))
+            newFridgePositions = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
+            if len(newFridgePositions) == len(oldFridgePositions):
+                finalFridgePositions = oldFridgePositions
+            else:
+                finalFridgePositions = newFridgePositions
+            experimentParameters['fridgePositions'] = finalFridgePositions 
+            
             experimentParameters['numPlates'] = int(plateNumberEntry.get())
             experimentParameters['blankColumns'] = [x+1 for x in range(12) if blankVarList[x].get()]
             experimentParameters['numTimepoints'] = int(timepointNumberEntry.get())
