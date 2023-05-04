@@ -257,7 +257,7 @@ class ExperimentHomePage(tk.Frame):
                 else:
                     allRemoveButtons[exp].config(state=tk.DISABLED)
             #ttk.Separator(expFrame, orient='horizontal').place(relx=0,rely=0+separatorOffset*(len(allLabels)-1+maxPlateChangeLen),relwidth=1)
-            self.after(5000, updateExperimentLabels)
+            self.after(2000, updateExperimentLabels)
 
         def editExp(expNum):
             master.switch_frame(ExperimentInfoPage,expNum)

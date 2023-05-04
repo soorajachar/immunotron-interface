@@ -83,9 +83,9 @@ class ContainerStatusPage(tk.Frame):
             self.incubatorTower2Labels.append(incTower2Label)
             fridgeLabel1 = tk.Label(mainWindow,text=str(label+1))#+':-')
             fridgeLabel1.grid(row=2+row,column=3,sticky=tk.EW)
-            self.fridgeLabels[row] = fridgeLabel1
+            self.fridgeLabels[22-row-1] = fridgeLabel1
             fridgeLabel2 = tk.Label(mainWindow,text=str(label+23))#+':-')
-            self.fridgeLabels[row+22] = fridgeLabel2
+            self.fridgeLabels[44-row-1] = fridgeLabel2
             fridgeLabel2.grid(row=2+row,column=4,sticky=tk.EW)
         
         def updateContainerLabels():
@@ -99,20 +99,24 @@ class ContainerStatusPage(tk.Frame):
                     label = 22-row-1
                     if incubatorLoadUnload[expSlot] == 1:
                         if row+1 in list(incubatorStatus[expSlot]):
-                            #self.incubatorTower1Labels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
                             self.incubatorTower1Labels[label].configure(text=str(row+1),fg='white',bg=palette[expSlot])
                         else:
+                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
+                    else:
+                        if row+1 in list(incubatorStatus[expSlot]):
                             self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
                 for row in range(44):
                     label = 44-row-1
                     if fridgeLoadUnload[expSlot] == 1:
                         if row+1 in list(fridgeStatus[expSlot]):
-                            #self.fridgeLabels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
-                            self.fridgeLabels[label].configure(text=str(row+1),fg='white',bg=palette[expSlot])
+                            self.fridgeLabels[row].configure(text=str(row+1),fg='white',bg=palette[expSlot])
                         else:
-                            self.fridgeLabels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
+                            self.fridgeLabels[row].configure(text=str(row+1),fg='black',bg=defaultbg)
+                    else:
+                        if row+1 in list(fridgeStatus[expSlot]):
+                            self.fridgeLabels[row].configure(text=str(row+1),fg='black',bg=defaultbg)
 
-            self.after(5000, updateContainerLabels)
+            self.after(2000, updateContainerLabels)
 
         updateContainerLabels()
         ttk.Separator(mainWindow, orient='vertical').place(relx=0.29, rely=0, relwidth=0.001, relheight=1)

@@ -12,6 +12,7 @@ else:
 
 def main():
     simulateLoadUnload(0,0,1)
+    simulateLoadUnload(1,0,1)
 
 def simulateLoadUnload(incubatorFridge, UnloadLoad, CurrentExperimentSlot):
     container = 'incubator'
