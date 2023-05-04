@@ -55,6 +55,9 @@ class ContainerStatusPage(tk.Frame):
         mainWindow = tk.Frame(self)
         mainWindow.pack(side=tk.TOP,padx=10)
         
+        #mainWindow.configure(bg="white")
+        defaultbg = mainWindow.cget('bg')
+
         #5 columns, 24 rows
         #tk.Label(mainWindow,text='Container',font='-weight bold').grid(row=0,column=0)
         tk.Label(mainWindow,text='Tower:',font='-weight bold').grid(row=1,column=0,sticky=tk.W)
@@ -63,27 +66,27 @@ class ContainerStatusPage(tk.Frame):
         tk.Label(mainWindow,text='Incubator',font='-weight bold').grid(row=0,column=1,columnspan=2,sticky=tk.W)
         tk.Label(mainWindow,text='Fridge',font='-weight bold').grid(row=0,column=3,columnspan=2,sticky=tk.W)
 
-        tk.Label(mainWindow,text='1',font='-weight bold').grid(row=1,column=1,sticky=tk.W)
-        tk.Label(mainWindow,text='2',font='-weight bold').grid(row=1,column=2,sticky=tk.W)
-        tk.Label(mainWindow,text='1',font='-weight bold').grid(row=1,column=3,sticky=tk.W)
-        tk.Label(mainWindow,text='2',font='-weight bold').grid(row=1,column=4,sticky=tk.W)
+        tk.Label(mainWindow,text='1',font='-weight bold').grid(row=1,column=1,sticky=tk.EW)
+        tk.Label(mainWindow,text='2',font='-weight bold').grid(row=1,column=2,sticky=tk.EW)
+        tk.Label(mainWindow,text='1',font='-weight bold').grid(row=1,column=3,sticky=tk.EW)
+        tk.Label(mainWindow,text='2',font='-weight bold').grid(row=1,column=4,sticky=tk.EW)
 
         self.incubatorTower1Labels,self.incubatorTower2Labels = [],[]
         self.fridgeLabels = ['-']*44
         for row in range(22):
             label = 22-row-1
             incTower1Label = tk.Label(mainWindow,text=str(label+1))#+':-')
-            incTower1Label.grid(row=2+row,column=1,sticky=tk.W)
+            incTower1Label.grid(row=2+row,column=1,sticky=tk.EW)
             self.incubatorTower1Labels.append(incTower1Label)
             incTower2Label = tk.Label(mainWindow,text=str(label+1))#+':-')
-            incTower2Label.grid(row=2+row,column=2,sticky=tk.W)
+            incTower2Label.grid(row=2+row,column=2,sticky=tk.EW)
             self.incubatorTower2Labels.append(incTower2Label)
             fridgeLabel1 = tk.Label(mainWindow,text=str(label+1))#+':-')
-            fridgeLabel1.grid(row=2+row,column=3,sticky=tk.W)
+            fridgeLabel1.grid(row=2+row,column=3,sticky=tk.EW)
             self.fridgeLabels[row] = fridgeLabel1
             fridgeLabel2 = tk.Label(mainWindow,text=str(label+23))#+':-')
             self.fridgeLabels[row+22] = fridgeLabel2
-            fridgeLabel2.grid(row=2+row,column=4,sticky=tk.W)
+            fridgeLabel2.grid(row=2+row,column=4,sticky=tk.EW)
         
         def updateContainerLabels():
             palette = sns.color_palette(sns.color_palette(),10).as_hex()
@@ -96,20 +99,25 @@ class ContainerStatusPage(tk.Frame):
                     label = 22-row-1
                     if incubatorLoadUnload[expSlot] == 1:
                         if row+1 in list(incubatorStatus[expSlot]):
-                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                            #self.incubatorTower1Labels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='white',bg=palette[expSlot])
                         else:
-                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black')
+                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
                 for row in range(44):
                     label = 44-row-1
                     if fridgeLoadUnload[expSlot] == 1:
                         if row+1 in list(fridgeStatus[expSlot]):
-                            self.fridgeLabels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                            #self.fridgeLabels[label].configure(text=str(row+1),fg=palette[expSlot],font='-weight bold')
+                            self.fridgeLabels[label].configure(text=str(row+1),fg='white',bg=palette[expSlot])
                         else:
-                            self.fridgeLabels[label].configure(text=str(row+1),fg='black')
+                            self.fridgeLabels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
 
             self.after(5000, updateContainerLabels)
 
         updateContainerLabels()
+        ttk.Separator(mainWindow, orient='vertical').place(relx=0.29, rely=0, relwidth=0.001, relheight=1)
+        ttk.Separator(mainWindow, orient='vertical').place(relx=0.70, rely=0, relwidth=0.001, relheight=1)
+        ttk.Separator(mainWindow, orient='horizontal').place(relx=0, rely=0.08, relwidth=1, relheight=0.001)
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,padx=10,pady=(10,10))
         quitButton = ttk.Button(buttonWindow, text="Quit",command=lambda: quit())

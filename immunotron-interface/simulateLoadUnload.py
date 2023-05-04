@@ -11,7 +11,7 @@ else:
     finalOutputPath = 'variables/'
 
 def main():
-    simulateLoadUnload(0,1,1)
+    simulateLoadUnload(1,1,1)
 
 def simulateLoadUnload(incubatorFridge, UnloadLoad, CurrentExperimentSlot):
     container = 'incubator'
