@@ -121,7 +121,7 @@ class ContainerStatusPage(tk.Frame):
         updateContainerLabels()
         ttk.Separator(mainWindow, orient='vertical').place(relx=0.29, rely=0, relwidth=0.001, relheight=1)
         ttk.Separator(mainWindow, orient='vertical').place(relx=0.70, rely=0, relwidth=0.001, relheight=1)
-        ttk.Separator(mainWindow, orient='horizontal').place(relx=0, rely=0.08, relwidth=1, relheight=0.001)
+        ttk.Separator(mainWindow, orient='horizontal').place(relx=0, rely=0.09, relwidth=1, relheight=0.001)
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,padx=10,pady=(10,10))
         quitButton = ttk.Button(buttonWindow, text="Quit",command=lambda: quit())
