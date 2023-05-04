@@ -374,8 +374,8 @@ class ExperimentInfoPage(tk.Frame):
         expParameterList = ['experimentProtocol','experimentID','numPlates','blankColumns','numTimepoints','startTime','timepointList','daysAgo']
         defaultValueDict = {k:v for k,v in zip(expParameterList,[list(experimentProtocols.keys())[0],'','',[False]*12,'',['  ','  ','  '],[],0])}
         for expParameter in expParameterList:
-            if expParameter in tempExpParameters:
-                if expParameter == 'experimentProtocol':
+            if expParameter in tempExpParameters or expParameter == 'experimentProtocol':
+                if expParameter == 'experimentProtocol' and 'protocolParameters' in tempExpParameters:
                     defaultValueDict[expParameter] = protocolIDToName[tempExpParameters['protocolParameters']['protocolID']]
                 elif expParameter in ['experimentID','numTimepoints','numPlates']:
                     defaultValueDict[expParameter] = tempExpParameters[expParameter]
@@ -486,6 +486,9 @@ class ExperimentInfoPage(tk.Frame):
             if len(newIncubatorPositions) == len(oldIncubatorPositions):
                 finalIncubatorPositions = oldIncubatorPositions
             else:
+                editContainerStatus(incubatorPath,expNum+1,[0])
+                newIncubatorPositions = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
+                editContainerStatus(incubatorPath,expNum+1,oldIncubatorPositions)
                 finalIncubatorPositions = newIncubatorPositions
             experimentParameters['incubatorPositions'] = finalIncubatorPositions 
             
@@ -496,6 +499,9 @@ class ExperimentInfoPage(tk.Frame):
             if len(newFridgePositions) == len(oldFridgePositions):
                 finalFridgePositions = oldFridgePositions
             else:
+                editContainerStatus(fridgePath,expNum+1,[0])
+                newFridgePositions = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
+                editContainerStatus(fridgePath,expNum+1,oldFridgePositions)
                 finalFridgePositions = newFridgePositions
             experimentParameters['fridgePositions'] = finalFridgePositions 
             
