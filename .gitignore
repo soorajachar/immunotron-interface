@@ -2,4 +2,3 @@ immunotron-interface/schedules/*
 immunotron-interface/matrices/*
 immunotron-interface/*.txt
 immunotron-interface/__pycache__
-immunotron-interface/allExperimentParameters.pkl
