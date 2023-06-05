@@ -55,7 +55,7 @@ class ExperimentHomePage(tk.Frame):
         
         EMPTYTEXT = '-'
         NUMEXP = 8
-        allLabels = ['Experiment:','Type (Author):','Name:','Incubator racks:','Fridge racks:','# plates:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Incubator Loaded?','Fridge Loaded?','Added to matrix:']
+        allLabels = ['Experiment:','Type (Author):','Name:','Incubator racks:','Fridge racks:','# plates per timepoint:','Blank columns:','# timepoints:','Start Time:','Timepoints:','End Time:','Incubator Loaded?','Fridge Loaded?','Added to matrix:']
         
         #Load experiment parameters (experiments currently running on robot)
         if 'experimentParameters.pkl' not in os.listdir(finalInputPath):
@@ -293,7 +293,7 @@ class ExperimentHomePage(tk.Frame):
             specificExpFrame = tk.Frame(expFrame, borderwidth = 1,relief=tk.RIDGE)
             specificExpFrame.grid(row=0,column=expNum+1,sticky=tk.EW)
             slotColor = sns.color_palette(sns.color_palette(),10).as_hex()[expNum]
-            tk.Label(specificExpFrame,text=ascii_uppercase[expNum],font='-weight bold',fg=slotColor).grid(row=0,column=expNum*2,columnspan=2)
+            tk.Label(specificExpFrame,text=str(expNum+1),font='-weight bold -size 20',fg=slotColor).grid(row=0,column=expNum*2,columnspan=2)
             specificExpInfoLabels = []
             separatorOffset = 0.06
             for j in range(len(allLabels)-1):
@@ -404,7 +404,6 @@ class ExperimentInfoPage(tk.Frame):
         def enableFinish(event=None):
             #Also check for re-enabling "enter timepoints" button
             try:
-                # TODO: Remove incubator position??
                 allWidgetChecks = [experimentProtocolVar.get(),meridianVar.get(),minuteVar.get()]
                 allWidgetBools = [experimentNameEntry.get() != '']+[x != '  ' for x in allWidgetChecks]
                 if all(allWidgetBools):
