@@ -82,7 +82,9 @@ def calculateFridgePositions(fridgePath, experimentProtocol, numPlates, blankCol
         numCultureColumnsPerTimepoint = numPlates * numCultureColumnsPerPlate
         numCollectionPlates = math.ceil((numTimepoints*numCultureColumnsPerTimepoint)/(culturePlateLength*4)) # 4 possible positions on 384-well plate per column on 96-well plate
         positionsNeeded += numCollectionPlates
-    if experimentProtocol['refrigerateCulturePlate']:
+    if experimentProtocol['refrigerateCulturePlate'] and experimentProtocol['samePlatesAcrossExperiment']:
+        positionsNeeded += numPlates
+    elif experimentProtocol['refrigerateCulturePlate']:
         positionsNeeded += numTimepoints*numPlates
     
     # To prioritize putting plates in the incubator in a continuous block of positions for an experiment, find all blocks of free positions

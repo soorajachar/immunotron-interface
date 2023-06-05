@@ -31,6 +31,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     daysAgo = kwargs['daysAgo'] # if experiment has already started (how many days ago)
     robotProtocol = protocol['protocolID'] # which robot protocol to use (int)
     samePlatesAcrossExperiment = protocol['samePlatesAcrossExperiment'] # if the same cultures are pulled out/replaced w/ incubator (bool)
+    differentLinesPerPlate = protocol['differentLinesPerPlate'] # whether to treat multiple plates per timepoint as individual timepoints or as one line to be run all at once (bool)
     refrigerateCulturePlate = protocol['refrigerateCulturePlate'] # if the culture plate used per timepoint in the experiment is saved in the fridge rather than the incubator (bool) ** samePlatesAcrossExperiment MUST be False
     transferToCollection = protocol['transferToCollection'] # if samples are to be transferred to a 384-well plate for storage in fridge (bool)
     timeoffset = protocol['protocolLength'] # estimated amount of time (minutes) the protocol takes to run for a single culture plate (int)
@@ -50,15 +51,24 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     numCultureColumnsPerPlate = culturePlateLength - len(blankColumns)
     numCultureColumnsPerTimepoint = numCulturePlatesPerTimepoint * numCultureColumnsPerPlate
     numCollectionPlates = math.ceil((numTimepoints*numCultureColumnsPerTimepoint)/(culturePlateLength*4)) # 4 possible positions on 384-well plate per column on 96-well plate
+    if not transferToCollection:
+        numCollectionPlates = 0
 
     #Allows for experiments to take up incomplete 384-well plates
     numActualTimepoints = numTimepoints
 
-    # For a same plate(s) throughout experiment, add a "timepoint" for each plate (ex. 2 lines for 2 plates) and make list of incubator positions
+    # For a same plate(s) throughout experiment, add a "timepoint" for each plate (ex. 2 lines for 2 plates) if not all run within same script and make list of incubator positions
     # If not same plate(s), len(incubator positions) should already equal number of timepoints
-    if samePlatesAcrossExperiment:
+    extraIncubatorArray = np.zeros([numTimepoints, 2], dtype=int)
+    if samePlatesAcrossExperiment and differentLinesPerPlate:
         numTimepoints *= numCulturePlatesPerTimepoint
         plateArray = np.tile(plateArray,numActualTimepoints)
+        extraIncubatorArray = np.zeros([numTimepoints, 2], dtype=int)
+    elif samePlatesAcrossExperiment:
+        assert numCulturePlatesPerTimepoint <= 3, 'Only up to 3 plates can be used in a single timepoint without breaking into different lines. If you need this, you will need to expand the matrix!'
+        for i, extraPlate in enumerate(plateArray[1:]):
+            extraIncubatorArray[:,i] = extraPlate
+        plateArray = np.tile(plateArray[0],numActualTimepoints)
 
     # Culture columns to aspirate (should be the same in 384 format)
     cultureList = []
@@ -77,7 +87,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     wellPoseArray = []
     collectionPlateArray = []
     collectionLidArray = np.ones([numTimepoints,1], dtype=int)
-    fridgeArray = np.zeros([numTimepoints, 2], dtype=int)
+    fridgeArray = np.zeros([numTimepoints, 3], dtype=int)
     waitTimeArray = np.zeros([numTimepoints,1], dtype=int)
     actualTimepoint = 0
 
@@ -103,19 +113,22 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             uniqueCollectionPlates = uniqueCollectionPlates[uniqueCollectionPlates != 0]
             timepointCollectionPlateArray = [1 if x == uniqueCollectionPlates[0] else x if x == 0 else 2 for x in timepointCollectionPlateArray] # Convert collection plate needed for col to position of plate (1 or 2, or 0 if col is not pipetted)
             uniqueCollectionPlates = [fridgePlateArray[x - 1] for x in uniqueCollectionPlates] # Convert collection plate number to fridge position
-        if refrigerateCulturePlate: 
+        if refrigerateCulturePlate and not samePlatesAcrossExperiment: 
             uniqueCollectionPlates.append(fridgePlateArray[j + numCollectionPlates]) # The first fridge position saved for culture plates will be AFTER any collection plates
-        if len(uniqueCollectionPlates) == 0:
-            uniqueCollectionPlates.append(0) # If the fridge is not used, append a 0 placeholder
-        
-        if len(uniqueCollectionPlates) == 2: # If a timepoint needs to be split across 2 timepoints, 2 lids will need to be removed after being pulled from the fridge
+        elif refrigerateCulturePlate and samePlatesAcrossExperiment and not differentLinesPerPlate:
+            fridgePositions = [fridgePlateArray[x + numCollectionPlates] for x in range(numCulturePlatesPerTimepoint)] # If fridge positions are needed but the same plates are used across the experiment, add a fridge position for each plate in the timepoint
+            for x in fridgePositions:
+                uniqueCollectionPlates.append(x)
+
+        if len(uniqueCollectionPlates) >= 2: # If a timepoint needs to be split across 2 timepoints, 2 lids will need to be removed after being pulled from the fridge
             collectionLidArray[j] = 12
-        else: # If only one plate is needed for the timepoint, add a 0 placeholder for position 2
-            uniqueCollectionPlates.append(0)
+        while len(uniqueCollectionPlates) < 3:
+            uniqueCollectionPlates.append(0) # If the fridge positions are not needed, append a 0 placeholder
+        
         collectionPlateArray.append(timepointCollectionPlateArray)
         fridgeArray[j,:] = uniqueCollectionPlates
         # If this is the last plate for this timepoint, add wait time until next
-        if j % numCulturePlatesPerTimepoint == 0:
+        if (j % numCulturePlatesPerTimepoint == 0) or not differentLinesPerPlate:
             intervalTime = int(timepointIntervals[actualTimepoint]*60-timeoffset*(numCulturePlatesPerTimepoint-1))
             waitTimeArray[j,0] = intervalTime if intervalTime > 0 else 1
             actualTimepoint+=1
@@ -131,7 +144,7 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
 
     plateArray = np.reshape(plateArray,(plateArray.shape[0],1)) # reshape to be able to stack
 
-    fullMatrix = np.hstack([plateArray,collectionLidArray,cultureColumnArray,collectionPlateArray,collectionColumnArray,wellPoseArray,waitTimeArray, experimentArray, fridgeArray]) # combine all pieces of matrix
+    fullMatrix = np.hstack([plateArray,collectionLidArray,cultureColumnArray,collectionPlateArray,collectionColumnArray,wellPoseArray,waitTimeArray, experimentArray, fridgeArray, extraIncubatorArray]) # combine all pieces of matrix
     '''
     COLUMNS (1-indexed for Evoware):
     1: Incubator position
@@ -142,7 +155,8 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     39-50: Well positions to load
     51: Wait time before next timepoint/row
     52: Robot protocol
-    53-54: Collection plates to remove from fridge and load onto positions 1 (and 2 if needed) of cooling plate
+    53-55: Collection plates to remove from fridge (if needed)
+    56-57: Extra incubator positions (if needed)
     '''
 
     name='matrix_'+experimentID+'.txt'
@@ -169,7 +183,8 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
             for i in range(0,len(baseTimeArrayHours)):
                 currentTimePointTime = fullStartTime + dt.timedelta(hours=baseTimeArrayHours[i])
                 robotTimepoint = i+1
-                robotTimepoint += +i*(numCulturePlatesPerTimepoint-1)
+                if differentLinesPerPlate:
+                    robotTimepoint += +i*(numCulturePlatesPerTimepoint-1)
                 print(currentTimePointTime.strftime('Timepoint '+str(i+1)+': %Y-%m-%d %a %I:%M %p' + ' ('+str(robotTimepoint)+ ')'),file=output,sep="\r\n")
 
     timename = schedulePath+'schedule_'+experimentID+'.txt'
