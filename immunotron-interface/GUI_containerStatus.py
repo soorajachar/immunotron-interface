@@ -14,16 +14,10 @@ import platform
 from string import ascii_uppercase
 import seaborn as sns
 
-schedulePath = 'schedules/' 
-matrixPath = 'matrices/'
-finalInputPath = 'misc/'
 if platform.system() == 'Windows':
     finalOutputPath = 'C:/ProgramData/Tecan/EVOware/database/variables/'
 else:
     finalOutputPath = 'variables/'
-
-incubatorPath = finalOutputPath+'incubatorStatus.txt'
-fridgePath = finalOutputPath+'fridgeStatus.txt'
 
 NUMEXP = 8
 
@@ -94,27 +88,26 @@ class ContainerStatusPage(tk.Frame):
             fridgeStatus = np.loadtxt(finalOutputPath+'fridgeStatus.txt',delimiter=',')
             incubatorLoadUnload = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
             fridgeLoadUnload = np.loadtxt(finalOutputPath+'fridgeLoadUnload.txt',delimiter=',')
+            # Clear previous labels
+            for row in range(22):
+                label = 22-row-1
+                self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
+            for row in range(44):
+                label = 44-row-1
+                self.fridgeLabels[row].configure(text=str(row+1),fg='black',bg=defaultbg)
+            
+            # Color currently loaded experiments
             for expSlot in range(NUMEXP):
                 for row in range(22):
                     label = 22-row-1
                     if incubatorLoadUnload[expSlot] == 1:
                         if row+1 in list(incubatorStatus[expSlot]):
                             self.incubatorTower1Labels[label].configure(text=str(row+1),fg='white',bg=palette[expSlot])
-                        else:
-                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
-                    else:
-                        if row+1 in list(incubatorStatus[expSlot]):
-                            self.incubatorTower1Labels[label].configure(text=str(row+1),fg='black',bg=defaultbg)
                 for row in range(44):
                     label = 44-row-1
                     if fridgeLoadUnload[expSlot] == 1:
                         if row+1 in list(fridgeStatus[expSlot]):
                             self.fridgeLabels[row].configure(text=str(row+1),fg='white',bg=palette[expSlot])
-                        else:
-                            self.fridgeLabels[row].configure(text=str(row+1),fg='black',bg=defaultbg)
-                    else:
-                        if row+1 in list(fridgeStatus[expSlot]):
-                            self.fridgeLabels[row].configure(text=str(row+1),fg='black',bg=defaultbg)
 
             self.after(2000, updateContainerLabels)
 
