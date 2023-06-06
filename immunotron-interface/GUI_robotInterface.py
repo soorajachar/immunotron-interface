@@ -39,7 +39,7 @@ class MainApp(tk.Tk):
         self.switch_frame(ExperimentHomePage)
 
     def switch_frame(self, frame_class,*args):
-        """Destroys current frame and replaces it with a new one."""
+        '''Destroys current frame and replaces it with a new one.'''
         new_frame = frame_class(self,*args)
         if self._frame is not None:
             self._frame.destroy()
@@ -150,8 +150,8 @@ class ExperimentHomePage(tk.Frame):
                         self.allExpInfoLabels[exp][k].configure(text=EMPTYTEXT,fg='black')
             
             #Update diti warning label
-            if "masterSchedule.txt" in os.listdir(finalInputPath):
-                with open(finalInputPath+"masterSchedule.txt", "r") as schedule:
+            if 'masterSchedule.txt' in os.listdir(finalInputPath):
+                with open(finalInputPath+'masterSchedule.txt', 'r') as schedule:
                     lines = schedule.readlines()
                 startLine = 0
                 numExperiments = 0
@@ -275,6 +275,9 @@ class ExperimentHomePage(tk.Frame):
                 editContainerStatus(fridgePath, expNum+1, [0]*44)
                 style.configure('text.Horizontal.TProgressbar'+str(expNum+1), text='0 %')
         
+        def addProtocol():
+            master.switch_frame(AddProtocolPage)
+        
         self.headerLabels = []
         for i,label in enumerate(allLabels):
             if i == 0:
@@ -352,10 +355,14 @@ class ExperimentHomePage(tk.Frame):
 
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,padx=10,pady=(10,10))
-        style.configure("Bold.TButton", font = ('Sans-Serif','12','bold'))
-        generateButton = ttk.Button(buttonWindow, text="Generate Matrix", style = "Bold.TButton",command=lambda: generateFullMatrix())
+        style.configure('Bold.TButton', font = ('Sans-Serif','12','bold'))
+        addButton = ttk.Button(buttonWindow, text='Add New Protocol', style = 'Bold.TButton',command=lambda: addProtocol())
+        addButton.pack(side=tk.LEFT)
+        
+        generateButton = ttk.Button(buttonWindow, text='Generate Matrix', style = 'Bold.TButton',command=lambda: generateFullMatrix())
         generateButton.pack(side=tk.LEFT)
-        quitButton = ttk.Button(buttonWindow, text="Quit",command=lambda: quit())
+        
+        quitButton = ttk.Button(buttonWindow, text='Quit',command=lambda: quit())
         quitButton.pack(side=tk.LEFT)
 
         updateExperimentLabels()
@@ -402,7 +409,7 @@ class ExperimentInfoPage(tk.Frame):
                     defaultValueDict[expParameter] = [full[:firstBreak],full[firstBreak+1:secondBreak],full[secondBreak+1:]]
 
         def enableFinish(event=None):
-            #Also check for re-enabling "enter timepoints" button
+            #Also check for re-enabling 'enter timepoints' button
             try:
                 allWidgetChecks = [experimentProtocolVar.get(),meridianVar.get(),minuteVar.get()]
                 allWidgetBools = [experimentNameEntry.get() != '']+[x != '  ' for x in allWidgetChecks]
@@ -423,7 +430,7 @@ class ExperimentInfoPage(tk.Frame):
         experimentNameEntry = ttk.Entry(mainWindow,width=20)
         experimentNameEntry.insert(tk.END, str(defaultValueDict['experimentID']))
         experimentNameEntry.grid(row=1,column=1,sticky=tk.W)
-        experimentNameEntry.bind("<Key>",enableFinish)
+        experimentNameEntry.bind('<Key>',enableFinish)
 
         startPos = 4
         
@@ -520,11 +527,11 @@ class ExperimentInfoPage(tk.Frame):
         
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,pady=20)
-        enterTpButton = ttk.Button(buttonWindow, text="Enter timepoints",command=lambda: collectInputs())
+        enterTpButton = ttk.Button(buttonWindow, text='Enter timepoints',command=lambda: collectInputs())
         enterTpButton.pack(side=tk.LEFT)
         enableFinish()
-        ttk.Button(buttonWindow, text="Back",command=lambda: master.switch_frame(ExperimentHomePage)).pack(side=tk.LEFT)
-        ttk.Button(buttonWindow, text="Quit",command=lambda: quit()).pack(side=tk.LEFT)
+        ttk.Button(buttonWindow, text='Back',command=lambda: master.switch_frame(ExperimentHomePage)).pack(side=tk.LEFT)
+        ttk.Button(buttonWindow, text='Quit',command=lambda: quit()).pack(side=tk.LEFT)
     
 class TimepointEntryPage(tk.Frame):
     def __init__(self,master,expNum,experimentParameters):
@@ -568,10 +575,148 @@ class TimepointEntryPage(tk.Frame):
 
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,pady=20)
-        ttk.Button(buttonWindow, text="Finish",command=lambda: collectInputs()).pack(side=tk.LEFT)
-        ttk.Button(buttonWindow, text="Back",command=lambda: master.switch_frame(ExperimentInfoPage,expNum)).pack(side=tk.LEFT)
-        ttk.Button(buttonWindow, text="Quit",command=lambda: quit()).pack(side=tk.LEFT)
+        ttk.Button(buttonWindow, text='Finish',command=lambda: collectInputs()).pack(side=tk.LEFT)
+        ttk.Button(buttonWindow, text='Back',command=lambda: master.switch_frame(ExperimentInfoPage,expNum)).pack(side=tk.LEFT)
+        ttk.Button(buttonWindow, text='Quit',command=lambda: quit()).pack(side=tk.LEFT)
 
-if __name__== "__main__":
+class AddProtocolPage(tk.Frame):
+    def __init__(self, master):
+        tk.Frame.__init__(self, master)
+        self.master = master
+
+        self.experimentProtocols = pickle.load(open(finalInputPath + 'experimentProtocols.pkl', 'rb'))
+        next_protocol_id = max([protocol['protocolID'] for protocol in self.experimentProtocols.values()], default=0) + 1
+        
+        def enableFinish(event=None):
+            try:
+                allWidgetChecks = [protocol_name_entry.get(), protocol_author_entry.get(), protocol_length_entry.get(), num_cols_tips_entry.get()]
+                allWidgetBools = [x != '' for x in allWidgetChecks]
+                if all(allWidgetBools):
+                    saveButton.config(state=tk.NORMAL)
+                else:
+                    saveButton.config(state=tk.DISABLED)
+            except:
+                saveButton.config(state=tk.DISABLED)
+        
+        # Create the necessary widgets for the page
+        # Protocol ID
+        protocol_id_label = tk.Label(self, text='Protocol ID:')
+        protocol_id_label.pack()
+        
+        protocol_id_entry = tk.Entry(self)
+        protocol_id_entry.insert(0, str(next_protocol_id))
+        protocol_id_entry.configure(state='readonly')
+        protocol_id_entry.pack()
+        
+        # Protocol Name
+        protocol_name_label = tk.Label(self, text='Protocol Name:')
+        protocol_name_label.pack()
+        
+        protocol_name_entry = tk.Entry(self)
+        protocol_name_entry.pack()
+        protocol_name_entry.bind('<Key>',enableFinish)
+        
+        # Protocol Author
+        protocol_author_label = tk.Label(self, text='Protocol Author:')
+        protocol_author_label.pack()
+        
+        protocol_author_entry = tk.Entry(self)
+        protocol_author_entry.pack()
+        protocol_author_entry.bind('<Key>',enableFinish)
+        
+        # Protocol Length
+        protocol_length_label = tk.Label(self, text='Estimated Protocol Length (min):')
+        protocol_length_label.pack()
+        
+        protocol_length_entry = tk.Entry(self)
+        protocol_length_entry.pack()
+        protocol_length_entry.bind('<Key>',enableFinish)
+        
+        # Number of Columns/Tips
+        num_cols_tips_label = tk.Label(self, text='Number of Columns of Tips used per Timepoint:')
+        num_cols_tips_label.pack()
+        
+        num_cols_tips_entry = tk.Entry(self)
+        num_cols_tips_entry.pack()
+        num_cols_tips_entry.bind('<Key>',enableFinish)
+
+        # Same Plates Across Experiment
+        same_plates_label = ttk.Label(self, text='Same Plates Across Experiment:')
+        same_plates_label.pack()
+        self.same_plates_var = tk.StringVar(value='False')
+        same_plates_combobox = ttk.Combobox(self, textvariable=self.same_plates_var, values=['True', 'False'])
+        same_plates_combobox.set('False')
+        same_plates_combobox.pack()
+        same_plates_combobox.bind('<<ComboboxSelected>>', enableFinish)
+        
+        # Transfer to Collection
+        transfer_to_collection_label = ttk.Label(self, text='Transfer to Collection:')
+        transfer_to_collection_label.pack()
+        self.transfer_to_collection_var = tk.StringVar(value='False')
+        transfer_to_collection_combobox = ttk.Combobox(self, textvariable=self.transfer_to_collection_var, values=['True', 'False'])
+        transfer_to_collection_combobox.set('False')
+        transfer_to_collection_combobox.pack()
+        transfer_to_collection_combobox.bind('<<ComboboxSelected>>', enableFinish)
+        
+        # Refrigerate Culture Plate
+        refrigerate_culture_plate_label = ttk.Label(self, text='Refrigerate Culture Plate:')
+        refrigerate_culture_plate_label.pack()
+        self.refrigerate_culture_plate_var = tk.StringVar(value='False')
+        refrigerate_culture_plate_combobox = ttk.Combobox(self, textvariable=self.refrigerate_culture_plate_var, values=['True', 'False'])
+        refrigerate_culture_plate_combobox.set('False')
+        refrigerate_culture_plate_combobox.pack()
+        refrigerate_culture_plate_combobox.bind('<<ComboboxSelected>>', enableFinish)
+        
+        # Different Lines per Plate
+        different_lines_per_plate_label = ttk.Label(self, text='Treat multiple plates as separate timepoints:')
+        different_lines_per_plate_label.pack()
+        self.different_lines_per_plate_var = tk.StringVar(value='False')
+        different_lines_per_plate_combobox = ttk.Combobox(self, textvariable=self.different_lines_per_plate_var, values=['True', 'False'])
+        different_lines_per_plate_combobox.set('False')
+        different_lines_per_plate_combobox.pack()
+        different_lines_per_plate_combobox.bind('<<ComboboxSelected>>', enableFinish)
+    
+        def collectInputs():
+            protocol_id = int(protocol_id_entry.get())
+            protocol_name = protocol_name_entry.get()
+            protocol_author = protocol_author_entry.get()
+            same_plates = True if self.same_plates_var.get() == 'True' else False
+            transfer_to_collection = True if self.transfer_to_collection_var.get() == 'True' else False
+            protocol_length = int(protocol_length_entry.get())
+            num_cols_tips = int(num_cols_tips_entry.get())
+            refrigerate_culture = True if self.refrigerate_culture_plate_var.get() == 'True' else False
+            different_lines = True if self.different_lines_per_plate_var.get() == 'True' else False
+
+            # Create a new dictionary with the protocol information
+            protocol_info = {
+                'protocolID': protocol_id,
+                'samePlatesAcrossExperiment': same_plates,
+                'transferToCollection': transfer_to_collection,
+                'protocolLength':protocol_length,
+                'numColsTips':num_cols_tips,
+                'refrigerateCulturePlate':refrigerate_culture,
+                'differentLinesPerPlate':different_lines
+            }
+
+            # Add the new protocol to the main dictionary
+            self.experimentProtocols[f'{protocol_name} ({protocol_author})'] = protocol_info
+
+            # Save the updated dictionary to the file
+            pickle.dump(self.experimentProtocols, open(finalInputPath + 'experimentProtocols.pkl', 'wb'))
+            
+            # Inform the user that the protocol has been saved
+            messagebox.showinfo('Protocol Saved', 'Protocol {} has been saved.'.format(protocol_name))
+
+            # Switch back to the main page
+            self.master.switch_frame(ExperimentHomePage)
+    
+        buttonWindow = tk.Frame(self)
+        buttonWindow.pack(side=tk.TOP,pady=20)
+        saveButton = ttk.Button(buttonWindow, text='Finish',command=lambda: collectInputs())
+        saveButton.pack(side=tk.LEFT)
+        enableFinish()
+        ttk.Button(buttonWindow, text='Back',command=lambda: master.switch_frame(ExperimentHomePage)).pack(side=tk.LEFT)
+
+if __name__== '__main__':
     app = MainApp()
     app.mainloop()

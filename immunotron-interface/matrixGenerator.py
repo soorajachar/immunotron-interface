@@ -20,11 +20,10 @@ def generateExperimentMatrix(singleExperiment=True,**kwargs):
     culturePlateWidth = 8
 
     experimentID = kwargs['experimentID'] # experiment name (str)
-    protocol = kwargs['protocolParameters'] # protocol parameters (dict) TODO: Change in GUI to pass values from experimentProtocols[protocolName]
-    plateArray = np.array(kwargs['incubatorPositions']) # incubator plate positions (list) TODO: Change in GUI to function that calculates positions
-    fridgePlateArray = kwargs['fridgePositions'] # collection plate positions in fridge (list) TODO: Change in GUI to function that calculates positions
-    #platePoseRestriction = kwargs['platePoseRestriction'] # cooling plate position (list) TODO: Remove in GUI
-    numCulturePlatesPerTimepoint = kwargs['numPlates'] # how many conditions per plate (int) TODO: Change in GUI (originally numConditions)
+    protocol = kwargs['protocolParameters'] # protocol parameters (dict)
+    plateArray = np.array(kwargs['incubatorPositions']) # incubator plate positions (list)
+    fridgePlateArray = kwargs['fridgePositions'] # collection plate positions in fridge (list)
+    numCulturePlatesPerTimepoint = kwargs['numPlates'] # how many conditions per plate (int)
     blankColumns = kwargs['blankColumns'] # blank columns on plate (list)
     numTimepoints = kwargs['numTimepoints'] # number of timepoints in experiment (int)
     startTime = kwargs['startTime'] # time of experiment start (str)
