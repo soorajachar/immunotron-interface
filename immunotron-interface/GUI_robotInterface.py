@@ -276,7 +276,7 @@ class ExperimentHomePage(tk.Frame):
                 style.configure('text.Horizontal.TProgressbar'+str(expNum+1), text='0 %')
         
         def addProtocol():
-            master.switch_frame()
+            master.switch_frame(AddProtocolPage)
         
         self.headerLabels = []
         for i,label in enumerate(allLabels):
@@ -356,8 +356,12 @@ class ExperimentHomePage(tk.Frame):
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,padx=10,pady=(10,10))
         style.configure("Bold.TButton", font = ('Sans-Serif','12','bold'))
+        addButton = ttk.Button(buttonWindow, text="Add New Protocol", style = "Bold.TButton",command=lambda: addProtocol())
+        addButton.pack(side=tk.LEFT)
+        
         generateButton = ttk.Button(buttonWindow, text="Generate Matrix", style = "Bold.TButton",command=lambda: generateFullMatrix())
         generateButton.pack(side=tk.LEFT)
+        
         quitButton = ttk.Button(buttonWindow, text="Quit",command=lambda: quit())
         quitButton.pack(side=tk.LEFT)
 
@@ -575,142 +579,143 @@ class TimepointEntryPage(tk.Frame):
         ttk.Button(buttonWindow, text="Back",command=lambda: master.switch_frame(ExperimentInfoPage,expNum)).pack(side=tk.LEFT)
         ttk.Button(buttonWindow, text="Quit",command=lambda: quit()).pack(side=tk.LEFT)
 
-class AddProtocolPage(tk.Frame): #TODO
-    def __init__(self,master,expNum):
+class AddProtocolPage(tk.Frame):
+    def __init__(self, master):
         tk.Frame.__init__(self, master)
-        mainWindow = tk.Frame(self)
-        mainWindow.pack(side=tk.TOP,padx=10)
-        experimentProtocols = pickle.load(open(finalInputPath+'experimentProtocols.pkl','rb'))
-        protocolNames = list(experimentProtocols.keys())
-        protocolIDs = [experimentProtocols[x]['protocolID'] for x in protocolNames]
-        protocolParameterList = ['protocolID', 'samePlatesAcrossExperiment', 'transferToCollection', 'protocolLength', 'numColsTips', 'refrigerateCulturePlate', 'differentLinesPerPlate']
-        defaultValueDict = {k:v for k,v in zip(protocolParameterList,[protocolIDs[-1]+1,True,True,15,1,False,False])}
+        self.master = master
 
+        self.experimentProtocols = pickle.load(open(finalInputPath + 'experimentProtocols.pkl', 'rb'))
+        next_protocol_id = max([protocol['protocolID'] for protocol in self.experimentProtocols.values()], default=0) + 1
+        
         def enableFinish(event=None):
-            #Also check for re-enabling "enter timepoints" button
             try:
-                allWidgetChecks = [experimentProtocolVar.get(),meridianVar.get(),minuteVar.get()]
-                allWidgetBools = [experimentNameEntry.get() != '']+[x != '  ' for x in allWidgetChecks]
+                allWidgetChecks = [protocol_name_entry.get(), protocol_author_entry.get(), protocol_length_entry.get(), num_cols_tips_entry.get()]
+                allWidgetBools = [x != '' for x in allWidgetChecks]
                 if all(allWidgetBools):
-                    enterTpButton.config(state=tk.NORMAL)
+                    saveButton.config(state=tk.NORMAL)
                 else:
-                    enterTpButton.config(state=tk.DISABLED)
+                    saveButton.config(state=tk.DISABLED)
             except:
-                enterTpButton.config(state=tk.DISABLED)
+                saveButton.config(state=tk.DISABLED)
         
-        tk.Label(mainWindow,text='Experiment type:').grid(row=0,column=0,sticky=tk.W)
-        experimentProtocolList = list(experimentProtocols.keys()) 
-        experimentProtocolVar = tk.StringVar()
-        experimentProtocolDropdown = ttk.OptionMenu(mainWindow,experimentProtocolVar,defaultValueDict['experimentProtocol'],*experimentProtocolList,command=lambda _: enableFinish())
-        experimentProtocolDropdown.grid(row=0,column=1,sticky=tk.W)
+        # Create the necessary widgets for the page
+        # Protocol ID
+        protocol_id_label = tk.Label(self, text="Protocol ID:")
+        protocol_id_label.pack()
         
-        tk.Label(mainWindow,text='Experiment name:').grid(row=1,column=0,sticky=tk.W)
-        experimentNameEntry = ttk.Entry(mainWindow,width=20)
-        experimentNameEntry.insert(tk.END, str(defaultValueDict['experimentID']))
-        experimentNameEntry.grid(row=1,column=1,sticky=tk.W)
-        experimentNameEntry.bind("<Key>",enableFinish)
+        protocol_id_entry = tk.Entry(self)
+        protocol_id_entry.insert(0, str(next_protocol_id))
+        protocol_id_entry.configure(state='readonly')
+        protocol_id_entry.pack()
+        
+        # Protocol Name
+        protocol_name_label = tk.Label(self, text="Protocol Name:")
+        protocol_name_label.pack()
+        
+        protocol_name_entry = tk.Entry(self)
+        protocol_name_entry.pack()
+        protocol_name_entry.bind("<Key>",enableFinish)
+        
+        # Protocol Author
+        protocol_author_label = tk.Label(self, text="Protocol Author:")
+        protocol_author_label.pack()
+        
+        protocol_author_entry = tk.Entry(self)
+        protocol_author_entry.pack()
+        protocol_author_entry.bind("<Key>",enableFinish)
+        
+        # Protocol Length
+        protocol_length_label = tk.Label(self, text="Estimated Protocol Length (min):")
+        protocol_length_label.pack()
+        
+        protocol_length_entry = tk.Entry(self)
+        protocol_length_entry.pack()
+        protocol_length_entry.bind("<Key>",enableFinish)
+        
+        # Number of Columns/Tips
+        num_cols_tips_label = tk.Label(self, text="Number of Columns of Tips used per Timepoint:")
+        num_cols_tips_label.pack()
+        
+        num_cols_tips_entry = tk.Entry(self)
+        num_cols_tips_entry.pack()
+        num_cols_tips_entry.bind("<Key>",enableFinish)
 
-        startPos = 4
+        # Same Plates Across Experiment
+        same_plates_label = ttk.Label(self, text="Same Plates Across Experiment:")
+        same_plates_label.pack()
+        self.same_plates_var = tk.StringVar(value="False")
+        same_plates_combobox = ttk.Combobox(self, textvariable=self.same_plates_var, values=["True", "False"])
+        same_plates_combobox.set("False")
+        same_plates_combobox.pack()
+        same_plates_combobox.bind("<<ComboboxSelected>>", enableFinish)
         
-        tk.Label(mainWindow,text='Number of plates:').grid(row=2,column=0,sticky=tk.W)
-        plateNumberEntry = tk.Entry(mainWindow,width=10)
-        plateNumberEntry.insert(tk.END,str(defaultValueDict['numPlates']))
-        plateNumberEntry.grid(row=2,column=1,sticky=tk.W)
+        # Transfer to Collection
+        transfer_to_collection_label = ttk.Label(self, text="Transfer to Collection:")
+        transfer_to_collection_label.pack()
+        self.transfer_to_collection_var = tk.StringVar(value="False")
+        transfer_to_collection_combobox = ttk.Combobox(self, textvariable=self.transfer_to_collection_var, values=["True", "False"])
+        transfer_to_collection_combobox.set("False")
+        transfer_to_collection_combobox.pack()
+        transfer_to_collection_combobox.bind("<<ComboboxSelected>>", enableFinish)
         
-        tk.Label(mainWindow,text='Blank columns:').grid(row=startPos+1,column=0,sticky=tk.W)
-        blankList = list(range(1,13))
-        blankCBList,blankVarList = [],[]
-        blankCBFrame = tk.Frame(mainWindow)
-        blankCBFrame.grid(row=startPos+1,column=1)
-        for pos in blankList:
-            blankVar = tk.BooleanVar(value=defaultValueDict['blankColumns'][pos-1])
-            blankCB = ttk.Checkbutton(blankCBFrame,variable=blankVar)
-            blankCB.grid(row=0,column=pos-1,sticky=tk.W)
-            tk.Label(blankCBFrame,text=str(pos)).grid(row=1,column=pos-1,sticky=tk.W)
-            blankCBList.append(blankCB)
-            blankVarList.append(blankVar)
+        # Refrigerate Culture Plate
+        refrigerate_culture_plate_label = ttk.Label(self, text="Refrigerate Culture Plate:")
+        refrigerate_culture_plate_label.pack()
+        self.refrigerate_culture_plate_var = tk.StringVar(value="False")
+        refrigerate_culture_plate_combobox = ttk.Combobox(self, textvariable=self.refrigerate_culture_plate_var, values=["True", "False"])
+        refrigerate_culture_plate_combobox.set("False")
+        refrigerate_culture_plate_combobox.pack()
+        refrigerate_culture_plate_combobox.bind("<<ComboboxSelected>>", enableFinish)
         
-        startPos2 = 6
-
-        tk.Label(mainWindow,text='Number of timepoints:').grid(row=startPos2,column=0,sticky=tk.W)
-        timepointNumberEntry = tk.Entry(mainWindow,width=10)
-        timepointNumberEntry.insert(tk.END,str(defaultValueDict['numTimepoints']))
-        timepointNumberEntry.grid(row=startPos2,column=1,sticky=tk.W)
-
-        tk.Label(mainWindow,text='Experiment start time:').grid(row=startPos2+1,column=0,sticky=tk.W)
-        startTimeFrame = tk.Frame(mainWindow)
-        startTimeFrame.grid(row=startPos2+1,column=1,sticky=tk.W)
-        hourList = [str(x).zfill(2) for x in range(1,13)]
-        hourVar = tk.StringVar()
-        hourDropdown = ttk.OptionMenu(startTimeFrame,hourVar,str(defaultValueDict['startTime'][0]),*hourList,command=lambda _: enableFinish())
-        hourDropdown.grid(row=0,column=0,sticky=tk.W)
-        minuteList = [str(x).zfill(2) for x in range(0,60,5)]
-        minuteVar = tk.StringVar()
-        minuteDropdown = ttk.OptionMenu(startTimeFrame,minuteVar,str(defaultValueDict['startTime'][1]),*minuteList,command=lambda _: enableFinish())
-        minuteDropdown.grid(row=0,column=1,sticky=tk.W)
-        meridianList = ['AM','PM']
-        meridianVar = tk.StringVar()
-        meridianDropdown = ttk.OptionMenu(startTimeFrame,meridianVar,str(defaultValueDict['startTime'][2]),*meridianList,command=lambda _: enableFinish())
-        meridianDropdown.grid(row=0,column=2,sticky=tk.W)
-        
-        tk.Label(mainWindow,text='Days since experiment start:').grid(row=startPos2+2,column=0,sticky=tk.W)
-        daysAgoEntry = ttk.Entry(mainWindow,width=5)
-        daysAgoEntry.grid(row=startPos2+2,column=1,sticky=tk.W)
-        daysAgoEntry.insert(tk.END,str(defaultValueDict['daysAgo']))
-        
+        # Different Lines per Plate
+        different_lines_per_plate_label = ttk.Label(self, text="Treat multiple plates as separate timepoints:")
+        different_lines_per_plate_label.pack()
+        self.different_lines_per_plate_var = tk.StringVar(value="False")
+        different_lines_per_plate_combobox = ttk.Combobox(self, textvariable=self.different_lines_per_plate_var, values=["True", "False"])
+        different_lines_per_plate_combobox.set("False")
+        different_lines_per_plate_combobox.pack()
+        different_lines_per_plate_combobox.bind("<<ComboboxSelected>>", enableFinish)
+    
         def collectInputs():
-            experimentParameters = {}
-            experimentParameters['experimentID'] = experimentNameEntry.get()
-            experimentParameters['protocolParameters'] = experimentProtocols[experimentProtocolVar.get()]
+            protocol_id = int(protocol_id_entry.get())
+            protocol_name = protocol_name_entry.get()
+            protocol_author = protocol_author_entry.get()
+            same_plates = True if self.same_plates_var.get() == 'True' else False
+            transfer_to_collection = True if self.transfer_to_collection_var.get() == 'True' else False
+            protocol_length = int(protocol_length_entry.get())
+            num_cols_tips = int(num_cols_tips_entry.get())
+            refrigerate_culture = True if self.refrigerate_culture_plate_var.get() == 'True' else False
+            different_lines = True if self.different_lines_per_plate_var.get() == 'True' else False
 
-            #Need special logic here to avoid re-calculating incubator positions that were already assigned
-            oldIncubatorPositions = np.loadtxt(finalOutputPath+'incubatorStatus.txt',delimiter=',')[expNum]
-            oldIncubatorPositions = list(oldIncubatorPositions[oldIncubatorPositions != 0].astype(int))
-            newIncubatorPositions = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
-            if len(newIncubatorPositions) == len(oldIncubatorPositions):
-                finalIncubatorPositions = oldIncubatorPositions
-            else:
-                editContainerStatus(incubatorPath,expNum+1,[0])
-                newIncubatorPositions = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
-                editContainerStatus(incubatorPath,expNum+1,oldIncubatorPositions)
-                finalIncubatorPositions = newIncubatorPositions
-            experimentParameters['incubatorPositions'] = finalIncubatorPositions 
-            
-            #Need special logic here to avoid re-calculating fridge positions that were already assigned
-            oldFridgePositions = np.loadtxt(finalOutputPath+'fridgeStatus.txt',delimiter=',')[expNum]
-            oldFridgePositions = list(oldFridgePositions[oldFridgePositions != 0].astype(int))
-            newFridgePositions = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
-            if len(newFridgePositions) == len(oldFridgePositions):
-                finalFridgePositions = oldFridgePositions
-            else:
-                editContainerStatus(fridgePath,expNum+1,[0])
-                newFridgePositions = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
-                editContainerStatus(fridgePath,expNum+1,oldFridgePositions)
-                finalFridgePositions = newFridgePositions
-            experimentParameters['fridgePositions'] = finalFridgePositions 
-            
-            experimentParameters['numPlates'] = int(plateNumberEntry.get())
-            experimentParameters['blankColumns'] = [x+1 for x in range(12) if blankVarList[x].get()]
-            experimentParameters['numTimepoints'] = int(timepointNumberEntry.get())
-            experimentParameters['timepointlist'] = []
-            experimentParameters['startTime'] = hourVar.get()+':'+minuteVar.get()+' '+meridianVar.get()
-            experimentParameters['daysAgo'] = int(daysAgoEntry.get())    
-            now = datetime.today() - dt.timedelta(days=experimentParameters['daysAgo'])
-            parsedStartTime = datetime.strptime(experimentParameters['startTime'],'%I:%M %p')
-            fullStartTime = datetime(now.year,now.month,now.day,parsedStartTime.hour,parsedStartTime.minute)
-            experimentParameters['fullStart'] = fullStartTime.strftime('%Y-%m-%d %a %I:%M %p')
-            experimentParameters['addedToMatrix'] = False
+            # Create a new dictionary with the protocol information
+            protocol_info = {
+                'protocolID': protocol_id,
+                'samePlatesAcrossExperiment': same_plates,
+                'transferToCollection': transfer_to_collection,
+                'protocolLength':protocol_length,
+                'numColsTips':num_cols_tips,
+                'refrigerateCulturePlate':refrigerate_culture,
+                'differentLinesPerPlate':different_lines
+            }
 
-            master.switch_frame(TimepointEntryPage,expNum,experimentParameters)
-        
+            # Add the new protocol to the main dictionary
+            self.experimentProtocols[f'{protocol_name} ({protocol_author})'] = protocol_info
+
+            # Save the updated dictionary to the file
+            pickle.dump(self.experimentProtocols, open(finalInputPath + 'experimentProtocols.pkl', 'wb'))
+            
+            # Inform the user that the protocol has been saved
+            messagebox.showinfo("Protocol Saved", "Protocol '{}' has been saved.".format(protocol_name))
+
+            # Switch back to the main page
+            self.master.switch_frame(ExperimentHomePage)
+    
         buttonWindow = tk.Frame(self)
         buttonWindow.pack(side=tk.TOP,pady=20)
-        enterTpButton = ttk.Button(buttonWindow, text="Enter timepoints",command=lambda: collectInputs())
-        enterTpButton.pack(side=tk.LEFT)
+        saveButton = ttk.Button(buttonWindow, text="Finish",command=lambda: collectInputs())
+        saveButton.pack(side=tk.LEFT)
         enableFinish()
         ttk.Button(buttonWindow, text="Back",command=lambda: master.switch_frame(ExperimentHomePage)).pack(side=tk.LEFT)
-        ttk.Button(buttonWindow, text="Quit",command=lambda: quit()).pack(side=tk.LEFT)
-    
 
 if __name__== "__main__":
     app = MainApp()
