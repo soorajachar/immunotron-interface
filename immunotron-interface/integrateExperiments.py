@@ -126,6 +126,8 @@ def integrateExperiments(experimentIDs, experimentProtocols):
         scheduleRowsPerTimepoint = timeDiffDict[prevScheduleIndex]
         timeDiffs+=[prevExperimentType['protocolLength']]*(scheduleRowsPerTimepoint-1)
         minutes-=prevExperimentType['protocolLength']*(scheduleRowsPerTimepoint-1)
+        if minutes < prevExperimentType['protocolLength']*(scheduleRowsPerTimepoint-1):
+            minutes = prevExperimentType['protocolLength']*(scheduleRowsPerTimepoint-1)
         timeDiffs+=[minutes]
 
     #Add in subtimepoints for last timepoint, if needed
