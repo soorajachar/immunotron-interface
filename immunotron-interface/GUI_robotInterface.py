@@ -488,27 +488,25 @@ class ExperimentInfoPage(tk.Frame):
             #Need special logic here to avoid re-calculating incubator positions that were already assigned
             oldIncubatorPositions = np.loadtxt(finalOutputPath+'incubatorStatus.txt',delimiter=',')[expNum]
             oldIncubatorPositions = list(oldIncubatorPositions[oldIncubatorPositions != 0].astype(int))
+            editContainerStatus(incubatorPath, expNum+1, [0]*22)
             newIncubatorPositions = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
             if len(newIncubatorPositions) == len(oldIncubatorPositions):
                 finalIncubatorPositions = oldIncubatorPositions
             else:
-                editContainerStatus(incubatorPath,expNum+1,[0])
-                newIncubatorPositions = calculateIncubatorPositions(incubatorPath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), int(timepointNumberEntry.get()))
-                editContainerStatus(incubatorPath,expNum+1,oldIncubatorPositions)
                 finalIncubatorPositions = newIncubatorPositions
+            editContainerStatus(incubatorPath, expNum+1, finalIncubatorPositions)
             experimentParameters['incubatorPositions'] = finalIncubatorPositions 
             
             #Need special logic here to avoid re-calculating fridge positions that were already assigned
             oldFridgePositions = np.loadtxt(finalOutputPath+'fridgeStatus.txt',delimiter=',')[expNum]
             oldFridgePositions = list(oldFridgePositions[oldFridgePositions != 0].astype(int))
+            editContainerStatus(fridgePath, expNum+1, [0]*44)
             newFridgePositions = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
             if len(newFridgePositions) == len(oldFridgePositions):
                 finalFridgePositions = oldFridgePositions
             else:
-                editContainerStatus(fridgePath,expNum+1,[0])
-                newFridgePositions = calculateFridgePositions(fridgePath, experimentProtocols[experimentProtocolVar.get()], int(plateNumberEntry.get()), [x+1 for x in range(12) if blankVarList[x].get()], int(timepointNumberEntry.get()))
-                editContainerStatus(fridgePath,expNum+1,oldFridgePositions)
                 finalFridgePositions = newFridgePositions
+            editContainerStatus(fridgePath, expNum+1, finalFridgePositions)
             experimentParameters['fridgePositions'] = finalFridgePositions 
             
             experimentParameters['numPlates'] = int(plateNumberEntry.get())
