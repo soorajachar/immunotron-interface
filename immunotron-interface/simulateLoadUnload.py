@@ -11,8 +11,7 @@ else:
     finalOutputPath = 'variables/'
 
 def main():
-    simulateLoadUnload(0,0,1)
-    simulateLoadUnload(1,0,1)
+    simulateLoadUnload(0,0,3)
 
 def simulateLoadUnload(incubatorFridge, UnloadLoad, CurrentExperimentSlot):
     container = 'incubator'
@@ -23,7 +22,7 @@ def simulateLoadUnload(incubatorFridge, UnloadLoad, CurrentExperimentSlot):
         arr[CurrentExperimentSlot-1] = 1
     else:
         arr[CurrentExperimentSlot-1] = 0
-    np.savetxt(finalOutputPath+'{}LoadUnload.txt'.format(container),arr,delimiter=',', fmt='%d')
+    np.savetxt(finalOutputPath+'{}LoadUnload.txt'.format(container),arr.reshape(1, arr.shape[0]),delimiter=',',fmt='%d')
 
 main()
 
