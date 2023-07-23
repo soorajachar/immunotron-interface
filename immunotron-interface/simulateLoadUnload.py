@@ -25,36 +25,3 @@ def simulateLoadUnload(incubatorFridge, UnloadLoad, CurrentExperimentSlot):
     np.savetxt(finalOutputPath+'{}LoadUnload.txt'.format(container),arr.reshape(1, arr.shape[0]),delimiter=',',fmt='%d')
 
 main()
-
-""" expIDs = [0,1]
-#tower2s = [True,True]
-tower2s = [False,False]
-incAction = 'unload'
-fridgeAction = 'unload'
-
-for tower2,expID in zip(tower2s,expIDs):
-    if incAction == 'load':
-        arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
-        arr[expID] = 1
-        np.savetxt(finalOutputPath+'incubatorLoadUnload.txt',arr,delimiter=',')
-        if tower2:
-            arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload2.txt',delimiter=',')
-            arr[expID] = 1
-            np.savetxt(finalOutputPath+'incubatorLoadUnload2.txt',arr,delimiter=',')
-    elif incAction == 'unload':
-        arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
-        arr[expID] = 0
-        np.savetxt(finalOutputPath+'incubatorLoadUnload.txt',arr,delimiter=',')
-        if tower2:
-            arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
-            arr[expID] = 0
-            np.savetxt(finalOutputPath+'incubatorLoadUnload.txt',arr,delimiter=',')
-
-    if fridgeAction == 'load':
-        arr = np.loadtxt(finalOutputPath+'fridgeLoadUnload.txt',delimiter=',')
-        arr[expID] = 1
-        np.savetxt(finalOutputPath+'fridgeLoadUnload.txt',arr,delimiter=',')
-    elif fridgeAction == 'unload':
-        arr = np.loadtxt(finalOutputPath+'incubatorLoadUnload.txt',delimiter=',')
-        arr[expID] = 0
-        np.savetxt(finalOutputPath+'fridgeLoadUnload.txt',arr,delimiter=',') """

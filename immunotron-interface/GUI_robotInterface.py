@@ -10,6 +10,7 @@ from tkinter import messagebox
 import seaborn as sns
 from matrixGenerator import generateExperimentMatrix,combineExperiments
 from utils import calculateIncubatorPositions,calculateFridgePositions,checkContainerStatus,editContainerStatus
+from simulateLoadUnload import simulateLoadUnload
 import tkinter.ttk as ttk
 import platform
 from string import ascii_uppercase
@@ -243,10 +244,7 @@ class ExperimentHomePage(tk.Frame):
                     generateButton.config(state=tk.NORMAL)
                 else:
                     generateButton.config(state=tk.DISABLED)
-                if noCount > 0:
-                    quitButton.config(state=tk.DISABLED)
-                else:
-                    quitButton.config(state=tk.NORMAL)
+                quitButton.config(state=tk.NORMAL)
             #Only enable experiment removal button if incubator and fridge are unloaded:
             for exp in range(NUMEXP):
                 if self.allExpInfoLabels[exp][-3]['text'] != EMPTYTEXT:
@@ -277,6 +275,9 @@ class ExperimentHomePage(tk.Frame):
         
         def addProtocol():
             master.switch_frame(AddProtocolPage)
+        
+        def flipPage_simulateLoadUnload():
+            master.switch_frame(SimulateLoadUnloadPage)
         
         self.headerLabels = []
         for i,label in enumerate(allLabels):
@@ -361,6 +362,9 @@ class ExperimentHomePage(tk.Frame):
         
         generateButton = ttk.Button(buttonWindow, text='Generate Matrix', style = 'Bold.TButton',command=lambda: generateFullMatrix())
         generateButton.pack(side=tk.LEFT)
+        
+        simButton = ttk.Button(buttonWindow, text='Simulate Unload/Load', style = 'Bold.TButton', command=lambda: flipPage_simulateLoadUnload())
+        simButton.pack(side=tk.LEFT)
         
         quitButton = ttk.Button(buttonWindow, text='Quit',command=lambda: quit())
         quitButton.pack(side=tk.LEFT)
@@ -713,6 +717,55 @@ class AddProtocolPage(tk.Frame):
         saveButton = ttk.Button(buttonWindow, text='Finish',command=lambda: collectInputs())
         saveButton.pack(side=tk.LEFT)
         enableFinish()
+        ttk.Button(buttonWindow, text='Back',command=lambda: master.switch_frame(ExperimentHomePage)).pack(side=tk.LEFT)
+
+class SimulateLoadUnloadPage(tk.Frame):
+    def __init__(self, master):
+        tk.Frame.__init__(self, master)
+        self.master = master
+
+        
+        # Create the necessary widgets for the page
+        
+        # Experiment Slot
+        slot_label = ttk.Label(self, text='Which experiment slot are you simulating?:')
+        slot_label.pack()
+        self.slot_var = tk.StringVar(value='1')
+        slot_combobox = ttk.Combobox(self, textvariable=self.slot_var, values=[str(x) for x in range(1,9)])
+        slot_combobox.set('1')
+        slot_combobox.pack()
+
+        # Incubator or Fridge
+        container_label = ttk.Label(self, text='Would you like to simulate the incubator or fridge?:')
+        container_label.pack()
+        self.container_var = tk.StringVar(value='Incubator')
+        container_combobox = ttk.Combobox(self, textvariable=self.container_var, values=['Incubator', 'Fridge'])
+        container_combobox.set('Incubator')
+        container_combobox.pack()
+        
+        # Unload Load
+        action_label = ttk.Label(self, text='Do you need to load or unload?:')
+        action_label.pack()
+        self.action_var = tk.StringVar(value='Unload')
+        action_combobox = ttk.Combobox(self, textvariable=self.action_var, values=['Unload', 'Load'])
+        action_combobox.set('Unload')
+        action_combobox.pack()
+        
+    
+        def collectInputs():
+            incubatorFridge = 0 if self.container_var.get() == 'Incubator' else 1
+            unloadLoad = 0 if self.action_var.get() == 'Unload' else 1
+            experimentSlot = int(self.slot_var.get())
+
+            simulateLoadUnload(incubatorFridge, unloadLoad, experimentSlot)
+            
+            # Switch back to the main page
+            self.master.switch_frame(ExperimentHomePage)
+    
+        buttonWindow = tk.Frame(self)
+        buttonWindow.pack(side=tk.TOP,pady=20)
+        saveButton = ttk.Button(buttonWindow, text='Finish',command=lambda: collectInputs())
+        saveButton.pack(side=tk.LEFT)
         ttk.Button(buttonWindow, text='Back',command=lambda: master.switch_frame(ExperimentHomePage)).pack(side=tk.LEFT)
 
 if __name__== '__main__':
