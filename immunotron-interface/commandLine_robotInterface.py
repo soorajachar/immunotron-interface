@@ -6,8 +6,8 @@ from integrateExperiments import integrateExperiments
 
 schedulePath = 'schedules/' 
 matrixPath = 'matrices/'
-finalPath = ''
-#finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
+#finalPath = ''
+finalPath = 'C:/ProgramData/TECAN/EVOware/database/variables/'
 
 culturePlateLength = 12
 culturePlateWidth = 8

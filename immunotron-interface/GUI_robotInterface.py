@@ -26,6 +26,18 @@ else:
 incubatorPath = finalOutputPath+'incubatorStatus.txt'
 fridgePath = finalOutputPath+'fridgeStatus.txt'
 
+<<<<<<< HEAD
+=======
+experimentTypeDict = {
+        'Supernatant (Sooraj)':1,
+        'Supernatant+Fix/Perm (Madison)':2,
+        'Reverse Plating (Anagha)':3,
+        'Supernatant+LD/Ab/Fix/Perm (Anagha)':4,
+        'Supernatant+Fix/Perm+SupTransfer (Madison)':5,
+        'Reverse Kinetics (Dongya)':6,
+        'SupTransfer_Only (Madison)':7
+        }
+>>>>>>> 8978657151be80dca5b0418633cbd90d2ad17419
 #Root class; handles frame switching in gui
 class MainApp(tk.Tk):
     def __init__(self):
@@ -438,10 +450,70 @@ class ExperimentInfoPage(tk.Frame):
 
         startPos = 4
         
+<<<<<<< HEAD
         tk.Label(mainWindow,text='Number of plates:').grid(row=2,column=0,sticky=tk.W)
         plateNumberEntry = tk.Entry(mainWindow,width=10)
         plateNumberEntry.insert(tk.END,str(defaultValueDict['numPlates']))
         plateNumberEntry.grid(row=2,column=1,sticky=tk.W)
+=======
+        tk.Label(mainWindow,text='Incubator plate position:').grid(row=startPos,column=0,sticky=tk.W)
+        incubatorPlatePosList = list(range(1,23)) 
+        incubatorPlatePosVar = tk.IntVar()
+        incubatorPlatePosDropdown = ttk.OptionMenu(mainWindow,incubatorPlatePosVar,defaultValueDict['plateOffset'],*incubatorPlatePosList,command=lambda _: enableFinish())
+        incubatorPlatePosDropdown.grid(row=startPos,column=1,sticky=tk.W)
+        
+        tk.Label(mainWindow,text='Cooling plate positions:').grid(row=3,column=0,sticky=tk.W)
+        coolingPlatePosList = list(range(1,5))
+        coolingPlatePosCBList,coolingPlatePosVarList = [],[]
+        coolingCBFrame = tk.Frame(mainWindow)
+        coolingCBFrame.grid(row=3,column=1,sticky=tk.W)
+        for pos in coolingPlatePosList:
+            coolingPlatePosVar = tk.BooleanVar(value=defaultValueDict['platePoseRestriction'][pos-1])
+            coolingPlatePosCB = ttk.Checkbutton(coolingCBFrame,variable=coolingPlatePosVar)
+            l = tk.Label(coolingCBFrame,text=str(pos))
+            l.grid(row=1,column=pos-1,sticky=tk.W)
+            if pos in reservedCooling:
+                coolingPlatePosVar.set(False)
+                coolingPlatePosCB['state'] = tk.DISABLED
+                l.config(fg='grey')
+            coolingPlatePosCB.grid(row=0,column=pos-1,sticky=tk.W)
+            coolingPlatePosCBList.append(coolingPlatePosCB)
+            coolingPlatePosVarList.append(coolingPlatePosVar)
+
+        def disableIncubatorEntries():
+            conditionNumber = conditionNumberVar.get()
+            numPlates = math.ceil(conditionNumber/96)
+            plateDisablingRadius = numPlates-1
+            #First re-enable any disabled option menu at previous condition number
+            for i in range(len(incubatorPlatePosList)):
+                incubatorPlatePosDropdown['menu'].entryconfigure(i, state = "normal")
+            for reservedRack in reservedRacks:
+                for i in range(max(reservedRack-plateDisablingRadius,1),reservedRack+1):
+                    incubatorPlatePosDropdown['menu'].entryconfigure(i-1, state = "disabled")
+            #disableTimepointEntries()
+
+        timepointNumberList = list(range(1,25))
+        def disableTimepointEntries():
+            conditionNumber = conditionNumberVar.get()
+            invalidTimepoints = [x for x in timepointNumberList if (x*conditionNumber)%384 != 0]
+            #First re-enable any disabled option menu at previous condition number
+            for i in range(len(timepointNumberList)):
+                timepointNumberDropdown['menu'].entryconfigure(i, state = "normal")
+            for invalidTimepoint in invalidTimepoints:
+                timepointNumberDropdown['menu'].entryconfigure(invalidTimepoint-1, state = "disabled")
+
+        tk.Label(mainWindow,text='Number of conditions:').grid(row=2,column=0,sticky=tk.W)
+        conditionNumberList =[8,16,24,32,48,56,64,72,80,88,96,128,192,256,288,384]
+        conditionNumberVar = tk.IntVar()
+        conditionNumberDropdown = ttk.OptionMenu(mainWindow,conditionNumberVar,defaultValueDict['numConditions'],*conditionNumberList,command=lambda _: disableIncubatorEntries())
+        conditionNumberDropdown.grid(row=2,column=1,sticky=tk.W)
+        
+        #Disable racks that are already occupied
+        plateDisablingRadius = math.ceil(defaultValueDict['numConditions']/96)-1
+        for reservedRack in reservedRacks:
+            for i in range(max(reservedRack-plateDisablingRadius,1),reservedRack+1):
+                incubatorPlatePosDropdown['menu'].entryconfigure(i-1, state = "disabled")
+>>>>>>> 8978657151be80dca5b0418633cbd90d2ad17419
         
         tk.Label(mainWindow,text='Blank columns:').grid(row=startPos+1,column=0,sticky=tk.W)
         blankList = list(range(1,13))

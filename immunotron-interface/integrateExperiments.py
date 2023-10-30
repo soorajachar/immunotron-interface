@@ -15,7 +15,12 @@ def integrateExperiments(experimentIDs, experimentProtocols):
         finalOutputPath = 'variables/'
 
     timeFormat = '%Y-%m-%d %a %I:%M %p'
+<<<<<<< HEAD
     #CHANGE THIS WHEN CHANGING PROTOCOL 
+=======
+    #CHANGE THIS WHEN CHANGING PROTOCOL
+    timepointDuration = {1:14, 2:75, 3:60, 4:90, 5:85, 6:75, 7:20}    
+>>>>>>> 8978657151be80dca5b0418633cbd90d2ad17419
     #Sort experiment start times:
     startTimeDict = {}
     for scheduleIndex,experimentName in enumerate(experimentIDs):
@@ -149,5 +154,11 @@ def integrateExperiments(experimentIDs, experimentProtocols):
     fullMatrix[:,50] = timeDiffs
     
     name = 'Full_Matrix_OnlySup.txt'
+<<<<<<< HEAD
     np.savetxt(finalOutputPath+name,fullMatrix,fmt='%d',delimiter=',')
     np.savetxt(finalOutputPath+'numTimepoints.txt',np.array([fullMatrix.shape[0]]),fmt='%d',delimiter=',')
+=======
+    np.savetxt(finalPath+name,fullMatrix,fmt='%d',delimiter=',')
+    name = 'numTimepoints.txt'
+    np.savetxt(finalPath+name,np.array([fullMatrix.shape[0]]),fmt='%d',delimiter=',')
+>>>>>>> 8978657151be80dca5b0418633cbd90d2ad17419
